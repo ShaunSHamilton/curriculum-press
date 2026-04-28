@@ -1,0 +1,208 @@
+.cp-player {
+  display: grid;
+  gap: 1rem;
+}
+
+.cp-player-card {
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(30, 35, 45, 0.98), rgba(14, 17, 23, 0.98));
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+
+.cp-player-header,
+.cp-player-body,
+.cp-player-footer {
+  padding: 1.1rem 1.25rem;
+}
+
+.cp-player-header {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cp-player-header h3 {
+  margin: 0.35rem 0 0.4rem;
+  font-size: 1.1rem;
+}
+
+.cp-player-header p,
+.cp-player-footer,
+.cp-empty-copy,
+.cp-diagram-panel p {
+  color: var(--text-muted);
+}
+
+.cp-player-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+
+.cp-prompt {
+  margin-top: 0;
+  color: var(--text-secondary);
+}
+
+.cp-grid-two {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cp-choice-column,
+.cp-stack {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.cp-choice,
+.cp-chip-button {
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: rgba(17, 22, 29, 0.95);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.cp-choice {
+  padding: 0.95rem 1rem;
+  text-align: left;
+}
+
+.cp-chip-button {
+  padding: 0.55rem 0.8rem;
+}
+
+.cp-choice:hover,
+.cp-chip-button:hover {
+  border-color: rgba(141, 181, 255, 0.55);
+  transform: translateY(-1px);
+}
+
+.cp-choice.is-active,
+.cp-chip-button.is-active {
+  border-color: rgba(141, 181, 255, 0.88);
+  background: rgba(28, 42, 74, 0.94);
+}
+
+.cp-choice.is-complete,
+.cp-chip-button.is-success,
+.cp-inline-card.is-success {
+  border-color: rgba(90, 194, 141, 0.75);
+}
+
+.cp-inline-card.is-danger {
+  border-color: rgba(239, 94, 94, 0.72);
+}
+
+.cp-inline-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+  background: rgba(13, 17, 24, 0.92);
+}
+
+.cp-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.cp-diagram-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.cp-diagram-stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  min-height: 280px;
+  border: 1px solid var(--border-strong);
+  background: rgba(7, 10, 15, 0.95);
+}
+
+.cp-diagram-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+  object-fit: cover;
+}
+
+.cp-hotspot {
+  position: absolute;
+  margin-left: -16px;
+  margin-top: -16px;
+  border-radius: 999px;
+  border: 2px solid rgba(141, 181, 255, 0.95);
+  background: rgba(141, 181, 255, 0.2);
+  cursor: pointer;
+}
+
+.cp-hotspot.is-active {
+  background: rgba(141, 181, 255, 0.42);
+  box-shadow: 0 0 0 6px rgba(141, 181, 255, 0.15);
+}
+
+.cp-diagram-panel,
+.cp-code-reference {
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 1rem;
+  background: rgba(13, 17, 24, 0.92);
+}
+
+.cp-code-reference span {
+  display: inline-block;
+  margin-bottom: 0.6rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+}
+
+.cp-code-reference pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: "IBM Plex Mono", "Cascadia Code", monospace;
+}
+
+.cp-textarea {
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  background: rgba(8, 11, 16, 0.95);
+  color: var(--text-primary);
+  padding: 0.95rem 1rem;
+  resize: vertical;
+}
+
+.cp-player-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cp-player-progress {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+@media (max-width: 860px) {
+  .cp-grid-two {
+    grid-template-columns: 1fr;
+  }
+
+  .cp-player-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+

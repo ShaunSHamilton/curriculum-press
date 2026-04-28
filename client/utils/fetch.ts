@@ -1,4 +1,4 @@
-async function authorizedFetch(
+export async function authorizedFetch(
   url: string | URL,
   options?: RequestInit,
 ): Promise<Response> {
