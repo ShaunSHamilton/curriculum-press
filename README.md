@@ -33,18 +33,18 @@ cargo run
 Frontend:
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 Production build:
 
 ```bash
-npm run build
+bun run build
 ```
 
 Note:
-The current environment used during implementation had Node `18.19.1`, which produced successful builds but emitted a Vite warning recommending Node `20.19+` or `22.12+`.
+Use the WSL Node `v24.13.0` environment together with `bun`.
 
 ## Extending Blocks
 
@@ -89,4 +89,3 @@ The public/export payload shape is:
 ```
 
 That same block payload is what the builder preview and `CurriculumPlayer` consume.
-
