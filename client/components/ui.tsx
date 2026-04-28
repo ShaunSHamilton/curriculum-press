@@ -19,7 +19,7 @@ export function Card({
   subtitle,
   actions,
 }: {
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
   title?: string;
   subtitle?: string;
@@ -44,15 +44,20 @@ export function Card({
 export function Field({
   label,
   hint,
+  required,
   children,
 }: {
   label: string;
   hint?: string;
+  required?: boolean;
   children: ReactNode;
 }) {
   return (
     <label className="field">
-      <span className="field-label">{label}</span>
+      <span className="field-label">
+        {label}
+        {required ? <span className="field-required"> *</span> : null}
+      </span>
       {hint ? <span className="field-hint">{hint}</span> : null}
       {children}
     </label>
@@ -117,4 +122,3 @@ export function Tabs({
     </div>
   );
 }
-

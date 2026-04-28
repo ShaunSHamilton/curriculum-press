@@ -29,9 +29,9 @@ export type Project = {
   id: string;
   organizationId: string;
   curriculumId: string;
+  createdByUserId: string;
   name: string;
   description: string;
-  audience: string;
   status: ProjectStatus;
   createdAt: string;
   updatedAt: string;
@@ -64,4 +64,3 @@ export type AuthResponse = {
   user: User;
   authHeaderName: string;
 };
-

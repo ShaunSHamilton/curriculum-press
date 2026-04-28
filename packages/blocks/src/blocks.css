@@ -5,7 +5,7 @@
 
 .cp-player-card {
   border: 1px solid var(--border-strong);
-  border-radius: 20px;
+  border-radius: 14px;
   background: linear-gradient(180deg, rgba(30, 35, 45, 0.98), rgba(14, 17, 23, 0.98));
   box-shadow: var(--shadow-panel);
   overflow: hidden;
@@ -14,7 +14,7 @@
 .cp-player-header,
 .cp-player-body,
 .cp-player-footer {
-  padding: 1.1rem 1.25rem;
+  padding: 0.9rem 1rem;
 }
 
 .cp-player-header {
@@ -47,20 +47,27 @@
 
 .cp-grid-two {
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cp-memory-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .cp-choice-column,
 .cp-stack {
   display: grid;
-  gap: 0.8rem;
+  gap: 0.65rem;
 }
 
 .cp-choice,
-.cp-chip-button {
+.cp-chip-button,
+.cp-memory-card {
   border: 1px solid var(--border-strong);
-  border-radius: 14px;
+  border-radius: 10px;
   background: rgba(17, 22, 29, 0.95);
   color: var(--text-primary);
   cursor: pointer;
@@ -73,7 +80,16 @@
 }
 
 .cp-chip-button {
-  padding: 0.55rem 0.8rem;
+  padding: 0.45rem 0.65rem;
+}
+
+.cp-memory-card {
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  font-size: 0.98rem;
+  font-weight: 600;
+  padding: 0.5rem;
 }
 
 .cp-choice:hover,
@@ -90,8 +106,13 @@
 
 .cp-choice.is-complete,
 .cp-chip-button.is-success,
-.cp-inline-card.is-success {
+.cp-inline-card.is-success,
+.cp-memory-card.is-complete {
   border-color: rgba(90, 194, 141, 0.75);
+}
+
+.cp-memory-card.is-revealed {
+  background: rgba(28, 42, 74, 0.94);
 }
 
 .cp-inline-card.is-danger {
@@ -100,10 +121,10 @@
 
 .cp-inline-card {
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  padding: 1rem;
+  border-radius: 12px;
+  padding: 0.85rem;
   display: grid;
-  gap: 0.75rem;
+  gap: 0.6rem;
   background: rgba(13, 17, 24, 0.92);
 }
 
@@ -121,7 +142,7 @@
 .cp-diagram-stage {
   position: relative;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: 14px;
   min-height: 280px;
   border: 1px solid var(--border-strong);
   background: rgba(7, 10, 15, 0.95);
@@ -153,8 +174,8 @@
 .cp-diagram-panel,
 .cp-code-reference {
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  padding: 1rem;
+  border-radius: 12px;
+  padding: 0.85rem;
   background: rgba(13, 17, 24, 0.92);
 }
 
@@ -176,10 +197,10 @@
 .cp-textarea {
   width: 100%;
   border: 1px solid var(--border-strong);
-  border-radius: 16px;
+  border-radius: 12px;
   background: rgba(8, 11, 16, 0.95);
   color: var(--text-primary);
-  padding: 0.95rem 1rem;
+  padding: 0.8rem 0.9rem;
   resize: vertical;
 }
 
@@ -200,9 +221,12 @@
     grid-template-columns: 1fr;
   }
 
+  .cp-memory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .cp-player-controls {
     flex-direction: column;
     align-items: stretch;
   }
 }
-

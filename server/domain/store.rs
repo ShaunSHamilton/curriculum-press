@@ -31,6 +31,7 @@ pub trait Store: Send + Sync {
 
     fn create_project(&self, input: CreateProjectInput) -> Result<Project, Error>;
     fn list_projects(&self, organization_id: Uuid) -> Result<Vec<Project>, Error>;
+    fn list_projects_for_user(&self, user_id: Uuid) -> Result<Vec<Project>, Error>;
     fn get_project(&self, project_id: Uuid) -> Result<Project, Error>;
     fn get_project_by_curriculum_id(&self, curriculum_id: Uuid) -> Result<Project, Error>;
     fn get_project_by_block_id(&self, block_id: Uuid) -> Result<Project, Error>;
@@ -259,9 +260,9 @@ impl Store for InMemoryStore {
             id: curriculum.project_id,
             organization_id: input.organization_id,
             curriculum_id: curriculum.id,
+            created_by_user_id: input.created_by_user_id,
             name: input.name.trim().to_string(),
             description: input.description.trim().to_string(),
-            audience: input.audience.trim().to_string(),
             status: input.status,
             created_at: timestamp.clone(),
             updated_at: timestamp,
@@ -292,6 +293,19 @@ impl Store for InMemoryStore {
             .get(&project_id)
             .cloned()
             .ok_or_else(|| not_found("Project not found."))
+    }
+
+    fn list_projects_for_user(&self, user_id: Uuid) -> Result<Vec<Project>, Error> {
+        let db = self.db.read().expect("store read lock");
+        let mut projects = db
+            .projects
+            .values()
+            .filter(|project| project.created_by_user_id == user_id)
+            .cloned()
+            .collect::<Vec<_>>();
+        projects.sort_by(|left, right| left.updated_at.cmp(&right.updated_at));
+        projects.reverse();
+        Ok(projects)
     }
 
     fn get_project_by_curriculum_id(&self, curriculum_id: Uuid) -> Result<Project, Error> {
@@ -330,9 +344,6 @@ impl Store for InMemoryStore {
             }
             if let Some(description) = input.description {
                 project.description = description.trim().to_string();
-            }
-            if let Some(audience) = input.audience {
-                project.audience = audience.trim().to_string();
             }
             if let Some(status) = input.status {
                 project.status = status;

@@ -43,58 +43,81 @@ function PlayerCard({ eyebrow, title, body, footer, children }: PlayerCardProps)
 
 function TileMatchBlock({ block }: { block: InteractiveBlock<"tile-match"> }) {
   const { pairs, prompt } = block.config as TileMatchConfig;
-  const rightItems = useMemo(
-    () => [...pairs].sort((left, right) => right.right.localeCompare(left.right)),
-    [pairs],
-  );
-  const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
-  const [matches, setMatches] = useState<Record<string, string>>({});
+  const deck = useMemo(() => {
+    const cards = pairs.flatMap((pair) => [
+      { id: `${pair.id}-left`, pairId: pair.id, label: pair.left },
+      { id: `${pair.id}-right`, pairId: pair.id, label: pair.right },
+    ]);
+
+    return [...cards].sort(() => Math.random() - 0.5);
+  }, [pairs]);
+  const [revealedCards, setRevealedCards] = useState<string[]>([]);
+  const [matchedPairs, setMatchedPairs] = useState<string[]>([]);
+  const [turns, setTurns] = useState(0);
+
+  useEffect(() => {
+    setRevealedCards([]);
+    setMatchedPairs([]);
+    setTurns(0);
+  }, [deck]);
+
+  useEffect(() => {
+    if (revealedCards.length !== 2) {
+      return;
+    }
+
+    const [firstId, secondId] = revealedCards;
+    const firstCard = deck.find((card) => card.id === firstId);
+    const secondCard = deck.find((card) => card.id === secondId);
+
+    if (!firstCard || !secondCard) {
+      setRevealedCards([]);
+      return;
+    }
+
+    if (firstCard.pairId === secondCard.pairId) {
+      setMatchedPairs((current) => [...current, firstCard.pairId]);
+      setRevealedCards([]);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setRevealedCards([]);
+    }, 850);
+
+    return () => window.clearTimeout(timeout);
+  }, [deck, revealedCards]);
 
   return (
     <PlayerCard
       eyebrow="Tile Match"
       title={block.title}
       body={block.description}
-      footer={`${Object.keys(matches).length} / ${pairs.length} matched`}
+      footer={`${matchedPairs.length} / ${pairs.length} matched in ${turns} turn${turns === 1 ? "" : "s"}`}
     >
       <p className="cp-prompt">{prompt}</p>
-      <div className="cp-grid-two">
-        <div className="cp-choice-column">
-          {pairs.map((pair) => (
+      <div className="cp-memory-grid">
+        {deck.map((card) => {
+          const isMatched = matchedPairs.includes(card.pairId);
+          const isRevealed = isMatched || revealedCards.includes(card.id);
+
+          return (
             <button
-              key={pair.id}
-              className={`cp-choice ${selectedLeft === pair.id ? "is-active" : ""} ${
-                matches[pair.id] ? "is-complete" : ""
+              key={card.id}
+              className={`cp-memory-card ${isMatched ? "is-complete" : ""} ${
+                isRevealed ? "is-revealed" : ""
               }`}
-              onClick={() => setSelectedLeft(pair.id)}
+              disabled={isMatched || revealedCards.length === 2 || revealedCards.includes(card.id)}
+              onClick={() => {
+                setRevealedCards((current) => [...current, card.id]);
+                setTurns((current) => current + (revealedCards.length === 1 ? 1 : 0));
+              }}
               type="button"
             >
-              {pair.left}
+              <span>{isRevealed ? card.label : "?"}</span>
             </button>
-          ))}
-        </div>
-        <div className="cp-choice-column">
-          {rightItems.map((pair) => {
-            const isMatched = Object.values(matches).includes(pair.id);
-            return (
-              <button
-                key={pair.id}
-                className={`cp-choice ${isMatched ? "is-complete" : ""}`}
-                disabled={!selectedLeft || isMatched}
-                onClick={() => {
-                  if (!selectedLeft) {
-                    return;
-                  }
-                  setMatches((current) => ({ ...current, [selectedLeft]: pair.id }));
-                  setSelectedLeft(null);
-                }}
-                type="button"
-              >
-                {pair.right}
-              </button>
-            );
-          })}
-        </div>
+          );
+        })}
       </div>
     </PlayerCard>
   );
@@ -388,4 +411,3 @@ export function CurriculumPlayer({ blocks }: CurriculumPlayerProps) {
 }
 
 export * from "./types";
-

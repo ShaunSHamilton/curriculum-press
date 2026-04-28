@@ -77,7 +77,6 @@ pub struct CreateProjectRequest {
     pub organization_id: Uuid,
     pub name: String,
     pub description: String,
-    pub audience: String,
     pub status: ProjectStatus,
 }
 
@@ -86,7 +85,6 @@ pub struct CreateProjectRequest {
 pub struct UpdateProjectRequest {
     pub name: Option<String>,
     pub description: Option<String>,
-    pub audience: Option<String>,
     pub status: Option<ProjectStatus>,
 }
 
@@ -131,6 +129,7 @@ pub fn api_router() -> Router<ServerState> {
             get(list_members).post(add_member),
         )
         .route("/projects", get(list_projects).post(create_project))
+        .route("/projects/mine", get(list_my_projects))
         .route(
             "/projects/{project_id}",
             get(get_project).patch(update_project),
@@ -368,11 +367,19 @@ async fn create_project(
 
     Ok(Json(state.store.create_project(CreateProjectInput {
         organization_id: payload.organization_id,
+        created_by_user_id: user_id,
         name: payload.name,
         description: payload.description,
-        audience: payload.audience,
         status: payload.status,
     })?))
+}
+
+async fn list_my_projects(
+    State(state): State<ServerState>,
+    headers: HeaderMap,
+) -> Result<Json<Vec<Project>>, Error> {
+    let user_id = require_user_id(&headers)?;
+    Ok(Json(state.store.list_projects_for_user(user_id)?))
 }
 
 async fn get_project(
@@ -400,7 +407,6 @@ async fn update_project(
         project_id,
         name: payload.name,
         description: payload.description,
-        audience: payload.audience,
         status: payload.status,
     })?))
 }

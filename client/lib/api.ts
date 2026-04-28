@@ -97,13 +97,16 @@ export function listProjects(userId: string, organizationId: string) {
   return apiFetch<Project[]>(`/projects?organizationId=${organizationId}`, { userId });
 }
 
+export function listMyProjects(userId: string) {
+  return apiFetch<Project[]>("/projects/mine", { userId });
+}
+
 export function createProject(
   userId: string,
   payload: {
     organizationId: string;
     name: string;
     description: string;
-    audience: string;
     status: ProjectStatus;
   },
 ) {
@@ -121,7 +124,7 @@ export function getProjectWorkspace(userId: string, projectId: string) {
 export function updateProject(
   userId: string,
   projectId: string,
-  payload: Partial<Pick<Project, "name" | "description" | "audience" | "status">>,
+  payload: Partial<Pick<Project, "name" | "description" | "status">>,
 ) {
   return apiFetch<Project>(`/projects/${projectId}`, {
     method: "PATCH",
@@ -190,4 +193,3 @@ export function reorderBlocks(userId: string, curriculumId: string, orderedIds: 
 export function exportProject(userId: string, projectId: string) {
   return apiFetch<ExportedCurriculum>(`/projects/${projectId}/export`, { userId });
 }
-

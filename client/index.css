@@ -62,21 +62,25 @@ pre {
 
 .workspace-shell {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: 260px minmax(0, 1fr);
   min-height: 100vh;
+}
+
+.workspace-shell.is-collapsed {
+  grid-template-columns: 88px minmax(0, 1fr);
 }
 
 .sidebar {
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
   align-content: start;
-  padding: 1.25rem;
+  padding: 1rem;
   border-right: 1px solid var(--border-subtle);
   background: linear-gradient(180deg, rgba(7, 10, 15, 0.98), rgba(13, 17, 24, 0.96));
 }
 
 .workspace-main {
-  padding: 1.4rem;
+  padding: 1.05rem;
   min-width: 0;
 }
 
@@ -88,8 +92,12 @@ pre {
 }
 
 .sidebar-brand h1 {
-  margin: 0.25rem 0 0;
-  font-size: 1.25rem;
+  margin: 0.15rem 0 0;
+  font-size: 1.15rem;
+}
+
+.sidebar-brand-copy {
+  min-width: 0;
 }
 
 .eyebrow {
@@ -101,8 +109,8 @@ pre {
 
 .card {
   border: 1px solid var(--border-subtle);
-  border-radius: 24px;
-  padding: 1rem;
+  border-radius: 16px;
+  padding: 0.85rem;
   background: linear-gradient(180deg, rgba(23, 29, 38, 0.9), rgba(12, 16, 22, 0.92));
   box-shadow: var(--shadow-panel);
 }
@@ -131,8 +139,8 @@ pre {
 
 .button {
   border: 1px solid transparent;
-  border-radius: 14px;
-  padding: 0.72rem 1rem;
+  border-radius: 10px;
+  padding: 0.62rem 0.85rem;
   transition: 150ms ease;
 }
 
@@ -168,7 +176,7 @@ pre {
 .button-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .button-row.compact .button {
@@ -177,7 +185,7 @@ pre {
 
 .field {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.35rem;
 }
 
 .field-label {
@@ -185,15 +193,19 @@ pre {
   font-weight: 600;
 }
 
+.field-required {
+  color: var(--warning);
+}
+
 .input,
 .textarea,
 .select {
   width: 100%;
   border: 1px solid var(--border-strong);
-  border-radius: 16px;
+  border-radius: 10px;
   background: rgba(8, 11, 16, 0.96);
   color: var(--text-primary);
-  padding: 0.82rem 0.95rem;
+  padding: 0.72rem 0.82rem;
 }
 
 .textarea {
@@ -205,7 +217,7 @@ pre {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  padding: 0.3rem 0.7rem;
+  padding: 0.25rem 0.55rem;
   font-size: 0.76rem;
   text-transform: capitalize;
   background: rgba(141, 181, 255, 0.12);
@@ -222,8 +234,8 @@ pre {
 
 .empty-state {
   border: 1px dashed var(--border-strong);
-  border-radius: 18px;
-  padding: 1.2rem;
+  border-radius: 12px;
+  padding: 1rem;
   display: grid;
   gap: 0.5rem;
   place-items: start;
@@ -236,8 +248,8 @@ pre {
 .tabs {
   display: inline-flex;
   gap: 0.35rem;
-  padding: 0.35rem;
-  margin-bottom: 1rem;
+  padding: 0.25rem;
+  margin-bottom: 0.85rem;
   border-radius: 999px;
   background: rgba(8, 11, 16, 0.95);
   border: 1px solid var(--border-subtle);
@@ -247,7 +259,7 @@ pre {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  padding: 0.65rem 0.9rem;
+  padding: 0.52rem 0.8rem;
   border-radius: 999px;
 }
 
@@ -260,7 +272,7 @@ pre {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 .auth-card {
@@ -270,16 +282,21 @@ pre {
 .stack,
 .stack-lg {
   display: grid;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 .stack-lg {
-  gap: 1.25rem;
+  gap: 1rem;
+}
+
+.stack-sm {
+  display: grid;
+  gap: 0.6rem;
 }
 
 .form-grid {
   display: grid;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 .form-grid.split {
@@ -292,18 +309,18 @@ pre {
 
 .panel-grid {
   display: grid;
-  gap: 0.9rem;
-  padding: 1rem;
+  gap: 0.75rem;
+  padding: 0.85rem;
   border: 1px solid var(--border-subtle);
-  border-radius: 18px;
+  border-radius: 12px;
   background: rgba(10, 13, 19, 0.94);
 }
 
 .checkbox-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
 }
 
 .checkbox {
@@ -328,8 +345,8 @@ pre {
 
 .builder-layout {
   display: grid;
-  gap: 1.25rem;
-  grid-template-columns: 320px minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  gap: 1rem;
+  grid-template-columns: 280px minmax(0, 1.05fr) minmax(300px, 0.95fr);
   align-items: start;
 }
 
@@ -339,20 +356,21 @@ pre {
 
 .catalog-grid {
   display: grid;
-  gap: 0.8rem;
-  margin-bottom: 1rem;
+  gap: 0.65rem;
+  margin-bottom: 0.8rem;
 }
 
 .catalog-card,
 .project-list-item,
-.outline-select {
+.outline-select,
+.sidebar-nav-button {
   width: 100%;
   text-align: left;
   border: 1px solid var(--border-subtle);
-  border-radius: 18px;
+  border-radius: 12px;
   background: rgba(8, 11, 16, 0.94);
   color: var(--text-primary);
-  padding: 0.95rem 1rem;
+  padding: 0.8rem 0.9rem;
 }
 
 .catalog-card strong,
@@ -367,17 +385,22 @@ pre {
   color: var(--text-muted);
 }
 
+.project-list-item p {
+  margin: 0.4rem 0 0;
+  color: var(--text-muted);
+}
+
 .outline-list,
 .project-list,
 .member-list {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .outline-item {
   border: 1px solid var(--border-subtle);
-  border-radius: 18px;
-  padding: 0.7rem;
+  border-radius: 12px;
+  padding: 0.6rem;
   background: rgba(10, 13, 19, 0.95);
 }
 
@@ -398,8 +421,8 @@ pre {
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.8rem 0.9rem;
-  border-radius: 14px;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
   background: rgba(9, 12, 18, 0.88);
 }
 
@@ -411,7 +434,7 @@ pre {
 
 .code-panel {
   border: 1px solid var(--border-subtle);
-  border-radius: 20px;
+  border-radius: 14px;
   overflow: hidden;
   background: rgba(7, 10, 15, 0.98);
 }
@@ -427,15 +450,47 @@ pre {
 
 .code-panel pre {
   margin: 0;
-  padding: 1rem;
+  padding: 0.85rem;
   overflow: auto;
   max-height: 540px;
 }
 
 .inline-card.export-meta {
   display: grid;
-  gap: 1rem;
+  gap: 0.8rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.page-header h2 {
+  margin: 0.2rem 0 0.35rem;
+  font-size: 1.35rem;
+}
+
+.page-header p {
+  margin: 0;
+  color: var(--text-muted);
+  max-width: 70ch;
+}
+
+.page-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.sidebar-nav-button.is-collapsed {
+  padding: 0.8rem 0.4rem;
+  text-align: center;
+}
+
+.sidebar-section {
+  overflow: hidden;
 }
 
 @media (max-width: 1180px) {
@@ -444,6 +499,10 @@ pre {
   }
 
   .builder-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .page-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -465,4 +524,3 @@ pre {
     flex-direction: column;
   }
 }
-

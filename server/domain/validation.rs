@@ -110,10 +110,6 @@ pub fn validate_project(input: &CreateProjectInput) -> Result<(), Error> {
         return Err(bad_request("Project name is required."));
     }
 
-    if input.audience.trim().is_empty() {
-        return Err(bad_request("Audience is required."));
-    }
-
     Ok(())
 }
 

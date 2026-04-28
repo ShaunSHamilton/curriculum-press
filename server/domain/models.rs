@@ -69,9 +69,9 @@ pub struct Project {
     pub id: Uuid,
     pub organization_id: Uuid,
     pub curriculum_id: Uuid,
+    pub created_by_user_id: Uuid,
     pub name: String,
     pub description: String,
-    pub audience: String,
     pub status: ProjectStatus,
     pub created_at: String,
     pub updated_at: String,
@@ -146,9 +146,9 @@ pub struct AddOrganizationMemberInput {
 #[derive(Debug, Clone)]
 pub struct CreateProjectInput {
     pub organization_id: Uuid,
+    pub created_by_user_id: Uuid,
     pub name: String,
     pub description: String,
-    pub audience: String,
     pub status: ProjectStatus,
 }
 
@@ -157,7 +157,6 @@ pub struct UpdateProjectInput {
     pub project_id: Uuid,
     pub name: Option<String>,
     pub description: Option<String>,
-    pub audience: Option<String>,
     pub status: Option<ProjectStatus>,
 }
 
