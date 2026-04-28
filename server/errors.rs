@@ -11,9 +11,29 @@ pub enum Error {
     #[error("{0}")]
     Reqwest(#[from] reqwest::Error),
     #[error("{0}")]
+    Json(#[from] serde_json::Error),
+    #[error("{0}")]
     SystemTimeError(#[from] std::time::SystemTimeError),
     #[error("{0}")]
     TowerSessions(#[from] tower_sessions::session::Error),
+}
+
+impl Error {
+    pub fn bad_request(message: impl Into<String>) -> Self {
+        Self::Server(StatusCode::BAD_REQUEST, message.into())
+    }
+
+    pub fn not_found(message: impl Into<String>) -> Self {
+        Self::Server(StatusCode::NOT_FOUND, message.into())
+    }
+
+    pub fn conflict(message: impl Into<String>) -> Self {
+        Self::Server(StatusCode::CONFLICT, message.into())
+    }
+
+    pub fn unauthorized(message: impl Into<String>) -> Self {
+        Self::Server(StatusCode::UNAUTHORIZED, message.into())
+    }
 }
 
 impl IntoResponse for Error {

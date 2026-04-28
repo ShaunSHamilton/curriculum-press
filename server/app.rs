@@ -1,7 +1,8 @@
+use axum::Router;
 use axum::extract::MatchedPath;
 use axum::extract::Request;
 use axum::routing::get;
-use axum::{Extension, Router};
+use http::HeaderName;
 use http::StatusCode;
 use http::header::ACCEPT;
 use http::header::AUTHORIZATION;
@@ -15,10 +16,12 @@ use tower_http::trace::TraceLayer;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 use tracing::info;
 
+use crate::domain::store::InMemoryStore;
 use crate::errors::Error;
 
 use crate::config::EnvVars;
-use crate::routes::get_status_ping;
+use crate::routes::{api_router, get_status_ping};
+use crate::state::ServerState;
 
 pub async fn app(env_vars: EnvVars) -> Result<Router, Error> {
     info!("Creating app...");
@@ -38,17 +41,20 @@ pub async fn app(env_vars: EnvVars) -> Result<Router, Error> {
             ORIGIN,
             X_CONTENT_TYPE_OPTIONS,
             SET_COOKIE,
+            HeaderName::from_static("x-curriculum-user-id"),
         ])
         .allow_credentials(true)
-        .allow_origin(env_vars.allowed_origins);
+        .allow_origin(env_vars.allowed_origins.clone());
 
-    let http_client = reqwest::ClientBuilder::new()
-        // Following redirects opens the client up to SSRF vulnerabilities.
-        .redirect(reqwest::redirect::Policy::none())
-        .build()?;
+    let state = ServerState {
+        store: InMemoryStore::new(),
+    };
 
     let app = Router::new()
         .route("/healthz", get(get_status_ping))
+        .route("/status/ping", get(get_status_ping))
+        .nest("/api/v1", api_router())
+        .with_state(state)
         .fallback_service(ServeDir::new("dist"))
         .layer(cors)
         .layer(TimeoutLayer::with_status_code(
@@ -56,7 +62,6 @@ pub async fn app(env_vars: EnvVars) -> Result<Router, Error> {
             std::time::Duration::from_millis(env_vars.request_timeout_in_ms),
         ))
         .layer(RequestBodyLimitLayer::new(env_vars.request_body_size_limit))
-        .layer(Extension(http_client))
         .layer(
             TraceLayer::new_for_http()
                 // Create span for the request and include the matched path. The matched

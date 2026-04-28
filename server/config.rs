@@ -9,10 +9,6 @@ pub struct EnvVars {
     ///
     /// ALLOWED_ORIGINS=http://localhost:3000,https://myapp.com
     pub allowed_origins: Vec<HeaderValue>,
-    /// Cookie key for signing cookies
-    ///
-    /// Must be 64 bytes
-    pub cookie_key: String,
     /// Port to run the server on
     pub port: u16,
     /// Request body size limit in bytes
@@ -52,12 +48,6 @@ impl EnvVars {
             }
         };
 
-        let Ok(cookie_key) = var("COOKIE_KEY") else {
-            error!("COOKIE_KEY not set");
-            panic!("COOKIE_KEY required");
-        };
-        assert_eq!(cookie_key.len(), 64, "COOKIE_KEY env var must be 64 bytes");
-
         let request_body_size_limit = match var("REQUEST_BODY_SIZE_LIMIT") {
             Ok(s) => s
                 .parse()
@@ -87,7 +77,6 @@ impl EnvVars {
 
         let env_vars = Self {
             allowed_origins,
-            cookie_key,
             port,
             request_body_size_limit,
             request_timeout_in_ms,

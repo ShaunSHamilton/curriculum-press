@@ -1,16 +1,8 @@
-use axum::extract::FromRef;
-use axum_extra::extract::cookie::Key;
+use std::sync::Arc;
 
-use crate::config::EnvVars;
+use crate::domain::store::Store;
 
 #[derive(Clone)]
 pub struct ServerState {
-    pub key: Key,
-    pub env_vars: EnvVars,
-}
-
-impl FromRef<ServerState> for Key {
-    fn from_ref(state: &ServerState) -> Self {
-        state.key.clone()
-    }
+    pub store: Arc<dyn Store>,
 }
