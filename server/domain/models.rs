@@ -36,6 +36,7 @@ pub enum ProjectStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: Uuid,
     pub name: String,
@@ -44,6 +45,7 @@ pub struct User {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Organization {
     pub id: Uuid,
     pub name: String,
@@ -52,6 +54,7 @@ pub struct Organization {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct OrganizationMember {
     pub id: Uuid,
     pub organization_id: Uuid,
@@ -61,6 +64,7 @@ pub struct OrganizationMember {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Project {
     pub id: Uuid,
     pub organization_id: Uuid,
@@ -74,6 +78,7 @@ pub struct Project {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Curriculum {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -84,6 +89,7 @@ pub struct Curriculum {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct BlockSettings {
     pub timer_seconds: Option<u32>,
     pub show_score: bool,
@@ -92,6 +98,7 @@ pub struct BlockSettings {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InteractiveBlock {
     pub id: Uuid,
     #[serde(rename = "type")]
