@@ -311,18 +311,20 @@ function App() {
             {authMode === "signup" ? (
               <Field label="Name">
                 <Input
-                  onChange={(event) =>
-                    setAuthForm((current) => ({ ...current, name: event.currentTarget.value }))
-                  }
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    setAuthForm((current) => ({ ...current, name: value }));
+                  }}
                   value={authForm.name}
                 />
               </Field>
             ) : null}
             <Field label="Email">
               <Input
-                onChange={(event) =>
-                  setAuthForm((current) => ({ ...current, email: event.currentTarget.value }))
-                }
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setAuthForm((current) => ({ ...current, email: value }));
+                }}
                 value={authForm.email}
               />
             </Field>
@@ -455,43 +457,47 @@ function App() {
               <div className="stack">
                 <Field label="Project Name">
                   <Input
-                    onChange={(event) =>
-                      setProjectForm((current) => ({ ...current, name: event.currentTarget.value }))
-                    }
+                    onChange={(event) => {
+                      const value = event.currentTarget.value;
+                      setProjectForm((current) => ({ ...current, name: value }));
+                    }}
                     value={projectForm.name}
                   />
                 </Field>
                 <Field label="Description">
                   <Textarea
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const value = event.currentTarget.value;
                       setProjectForm((current) => ({
                         ...current,
-                        description: event.currentTarget.value,
-                      }))
-                    }
+                        description: value,
+                      }));
+                    }}
                     rows={3}
                     value={projectForm.description}
                   />
                 </Field>
                 <Field label="Audience">
                   <Input
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const value = event.currentTarget.value;
                       setProjectForm((current) => ({
                         ...current,
-                        audience: event.currentTarget.value,
-                      }))
-                    }
+                        audience: value,
+                      }));
+                    }}
                     value={projectForm.audience}
                   />
                 </Field>
                 <Field label="Status">
                   <Select
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const value = event.currentTarget.value as ProjectStatus;
                       setProjectForm((current) => ({
                         ...current,
-                        status: event.currentTarget.value as ProjectStatus,
-                      }))
-                    }
+                        status: value,
+                      }));
+                    }}
                     value={projectForm.status}
                   >
                     <option value="draft">Draft</option>
@@ -550,34 +556,37 @@ function App() {
               <div className="form-grid split triple">
                 <Field label="Project Name">
                   <Input
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const value = event.currentTarget.value;
                       setProjectDetailsDraft((current) => ({
                         ...current,
-                        name: event.currentTarget.value,
-                      }))
-                    }
+                        name: value,
+                      }));
+                    }}
                     value={projectDetailsDraft.name}
                   />
                 </Field>
                 <Field label="Audience">
                   <Input
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const value = event.currentTarget.value;
                       setProjectDetailsDraft((current) => ({
                         ...current,
-                        audience: event.currentTarget.value,
-                      }))
-                    }
+                        audience: value,
+                      }));
+                    }}
                     value={projectDetailsDraft.audience}
                   />
                 </Field>
                 <Field label="Status">
                   <Select
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const value = event.currentTarget.value as ProjectStatus;
                       setProjectDetailsDraft((current) => ({
                         ...current,
-                        status: event.currentTarget.value as ProjectStatus,
-                      }))
-                    }
+                        status: value,
+                      }));
+                    }}
                     value={projectDetailsDraft.status}
                   >
                     <option value="draft">Draft</option>
@@ -588,12 +597,13 @@ function App() {
               </div>
               <Field label="Description">
                 <Textarea
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
                     setProjectDetailsDraft((current) => ({
                       ...current,
-                      description: event.currentTarget.value,
-                    }))
-                  }
+                      description: value,
+                    }));
+                  }}
                   rows={3}
                   value={projectDetailsDraft.description}
                 />
