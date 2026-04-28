@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { z } from "zod/v4";
 
 import type {
   AnyInteractiveBlock,
@@ -67,13 +68,17 @@ export function BlockEditor({
   }
 
   function applyRawJson() {
-    try {
-      const parsed = JSON.parse(rawJson) as AnyInteractiveBlock["config"];
-      setRawJsonError(null);
-      updateConfig(parsed);
-    } catch (error) {
-      setRawJsonError(error instanceof Error ? error.message : "Invalid JSON.");
+    const result = z.string().transform((s, ctx) => {
+      try { return JSON.parse(s) as AnyInteractiveBlock["config"]; }
+      catch (e) { ctx.addIssue({ input: s, code: "custom", message: e instanceof Error ? e.message : "Invalid JSON" }); return z.NEVER; }
+    }).safeParse(rawJson);
+
+    if (!result.success) {
+      setRawJsonError(result.error.issues[0]?.message ?? "Invalid JSON");
+      return;
     }
+    setRawJsonError(null);
+    updateConfig(result.data);
   }
 
   return (

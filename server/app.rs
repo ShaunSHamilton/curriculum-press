@@ -13,7 +13,7 @@ use reqwest::Method;
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
-use tower_http::{cors::CorsLayer, services::ServeDir};
+use tower_http::{cors::CorsLayer, services::{ServeDir, ServeFile}};
 use tracing::info;
 
 use crate::domain::store::InMemoryStore;
@@ -55,7 +55,7 @@ pub async fn app(env_vars: EnvVars) -> Result<Router, Error> {
         .route("/status/ping", get(get_status_ping))
         .nest("/api/v1", api_router())
         .with_state(state)
-        .fallback_service(ServeDir::new("dist"))
+        .fallback_service(ServeDir::new("dist").not_found_service(ServeFile::new("dist/index.html")))
         .layer(cors)
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,

@@ -15,6 +15,7 @@ import {
   useParams,
 } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { BlockEditor } from "../components/block-editor";
 import { Badge, Button, Card, EmptyState, Field, Input, Select, Tabs, Textarea } from "../components/ui";
@@ -49,6 +50,34 @@ import type {
 } from "../types";
 import { BLOCK_CATALOG, createDefaultBlock } from "../types";
 import { CurriculumPlayer, InteractiveBlockRenderer } from "../../packages/blocks/src";
+import { z } from "zod/v4";
+
+const authSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.email("Valid email required"),
+});
+
+const signInSchema = z.object({
+  email: z.email("Valid email required"),
+});
+
+const organizationSchema = z.object({
+  name: z.string().min(1, "Organization name is required"),
+});
+
+const memberSchema = z.object({
+  email: z.email("Valid email required"),
+  name: z.string().optional(),
+});
+
+const projectSchema = z.object({
+  name: z.string().min(1, "Project name is required"),
+  organizationId: z.string().min(1, "Organization is required"),
+});
+
+function firstZodError(result: z.ZodSafeParseError<unknown>): string {
+  return result.error.issues[0]?.message ?? "Invalid input";
+}
 
 type PreviewTab = "block" | "curriculum" | "export";
 
@@ -139,7 +168,9 @@ function AuthScreen() {
       setUserId(response.user.id);
       setAuthForm({ name: "", email: "" });
       queryClient.invalidateQueries();
+      toast.success("Account created");
     },
+    onError: (error) => toast.error(error.message),
   });
 
   const signInMutation = useMutation({
@@ -147,7 +178,9 @@ function AuthScreen() {
     onSuccess: (response) => {
       setUserId(response.user.id);
       queryClient.invalidateQueries();
+      toast.success("Signed in");
     },
+    onError: (error) => toast.error(error.message),
   });
 
   return (
@@ -194,9 +227,13 @@ function AuthScreen() {
           <Button
             onClick={() => {
               if (authMode === "signup") {
+                const result = authSchema.safeParse(authForm);
+                if (!result.success) { toast.error(firstZodError(result)); return; }
                 signUpMutation.mutate(authForm);
                 return;
               }
+              const result = signInSchema.safeParse({ email: authForm.email });
+              if (!result.success) { toast.error(firstZodError(result)); return; }
               signInMutation.mutate({ email: authForm.email });
             }}
             type="button"
@@ -218,7 +255,7 @@ function HomeRoute() {
       return;
     }
 
-    void navigate({ to: "/projects/mine", replace: true });
+    void navigate({ to: "/projects/$userId", params: { userId }, replace: true });
   }, [navigate, userId]);
 
   if (!userId) {
@@ -258,11 +295,13 @@ function AppShell() {
       setOrganizationName("");
       setShowOrganizationCreator(false);
       setSelectedOrganizationId(organization.id);
+      toast.success("Organization created");
       void navigate({
         to: "/organizations/$organizationId/projects",
         params: { organizationId: organization.id },
       });
     },
+    onError: (error) => toast.error(error.message),
   });
 
   useEffect(() => {
@@ -284,10 +323,12 @@ function AppShell() {
     <div className={`workspace-shell ${sidebarCollapsed ? "is-collapsed" : ""}`}>
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="sidebar-brand-copy">
-            <span className="eyebrow">Builder Workspace</span>
-            {!sidebarCollapsed ? <h1>Curriculum Press</h1> : null}
-          </div>
+          {!sidebarCollapsed ? (
+            <div className="sidebar-brand-copy">
+              <span className="eyebrow">Builder Workspace</span>
+              <h1>Curriculum Press</h1>
+            </div>
+          ) : null}
           <Button
             aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -338,7 +379,11 @@ function AppShell() {
                     <div className="button-row">
                       <Button
                         disabled={!organizationName.trim() || createOrganizationMutation.isPending}
-                        onClick={() => createOrganizationMutation.mutate({ name: organizationName })}
+                        onClick={() => {
+                          const result = organizationSchema.safeParse({ name: organizationName });
+                          if (!result.success) { toast.error(firstZodError(result)); return; }
+                          createOrganizationMutation.mutate({ name: organizationName });
+                        }}
                         type="button"
                       >
                         Create
@@ -371,7 +416,7 @@ function AppShell() {
           <SidebarNavButton
             collapsed={sidebarCollapsed}
             label="My Projects"
-            onClick={() => void navigate({ to: "/projects/mine" })}
+            onClick={() => void navigate({ to: "/projects/$userId", params: { userId } })}
           />
           <SidebarNavButton
             collapsed={sidebarCollapsed}
@@ -492,8 +537,10 @@ function OrganizationProjectsPage() {
     onSuccess: () => {
       setMemberEmail("");
       setMemberName("");
+      toast.success("Member added");
       void membersQuery.refetch();
     },
+    onError: (error) => toast.error(error.message),
   });
 
   useEffect(() => {
@@ -551,7 +598,11 @@ function OrganizationProjectsPage() {
             </Field>
             <Button
               disabled={!memberEmail.trim() || addMemberMutation.isPending}
-              onClick={() => addMemberMutation.mutate({ email: memberEmail, name: memberName })}
+              onClick={() => {
+                const result = memberSchema.safeParse({ email: memberEmail, name: memberName });
+                if (!result.success) { toast.error(firstZodError(result)); return; }
+                addMemberMutation.mutate({ email: memberEmail, name: memberName });
+              }}
               type="button"
               variant="secondary"
             >
@@ -596,7 +647,9 @@ function ProjectBuilderPage() {
     onSuccess: (payload) => {
       downloadExport(payload);
       setPreviewTab("export");
+      toast.success("Export downloaded");
     },
+    onError: (error) => toast.error(error.message),
   });
 
   const updateProjectMutation = useMutation({
@@ -604,7 +657,9 @@ function ProjectBuilderPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workspace", userId, projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Project saved");
     },
+    onError: (error) => toast.error(error.message),
   });
 
   const createBlockMutation = useMutation({
@@ -621,7 +676,9 @@ function ProjectBuilderPage() {
     onSuccess: (block) => {
       setSelectedBlockId(block.id);
       queryClient.invalidateQueries({ queryKey: ["workspace", userId, projectId] });
+      toast.success("Block added");
     },
+    onError: (error) => toast.error(error.message),
   });
 
   const updateBlockMutation = useMutation({
@@ -635,7 +692,9 @@ function ProjectBuilderPage() {
     onSuccess: () => {
       setSelectedBlockId("");
       queryClient.invalidateQueries({ queryKey: ["workspace", userId, projectId] });
+      toast.success("Block saved");
     },
+    onError: (error) => toast.error(error.message),
   });
 
   const deleteBlockMutation = useMutation({
@@ -643,7 +702,9 @@ function ProjectBuilderPage() {
     onSuccess: () => {
       setSelectedBlockId("");
       queryClient.invalidateQueries({ queryKey: ["workspace", userId, projectId] });
+      toast.success("Block deleted");
     },
+    onError: (error) => toast.error(error.message),
   });
 
   const duplicateBlockMutation = useMutation({
@@ -651,7 +712,9 @@ function ProjectBuilderPage() {
     onSuccess: (block) => {
       setSelectedBlockId(block.id);
       queryClient.invalidateQueries({ queryKey: ["workspace", userId, projectId] });
+      toast.success("Block duplicated");
     },
+    onError: (error) => toast.error(error.message),
   });
 
   const reorderBlocksMutation = useMutation({
@@ -659,6 +722,7 @@ function ProjectBuilderPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workspace", userId, projectId] });
     },
+    onError: (error) => toast.error(error.message),
   });
 
   useEffect(() => {
@@ -968,8 +1032,10 @@ function ProjectCreatePanel({
         description: "",
         status: "draft",
       });
+      toast.success("Project created");
       onCreated(project.id);
     },
+    onError: (error) => toast.error(error.message),
   });
 
   return (
@@ -1029,7 +1095,11 @@ function ProjectCreatePanel({
         </Field>
         <Button
           disabled={!organizationId || !projectForm.name.trim() || createProjectMutation.isPending}
-          onClick={() => createProjectMutation.mutate()}
+          onClick={() => {
+            const result = projectSchema.safeParse({ name: projectForm.name, organizationId });
+            if (!result.success) { toast.error(firstZodError(result)); return; }
+            createProjectMutation.mutate();
+          }}
           type="button"
         >
           Create Project
@@ -1165,7 +1235,7 @@ const appRoute = createRoute({
 
 const myProjectsRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: "projects/mine",
+  path: "projects/$userId",
   component: MyProjectsPage,
 });
 

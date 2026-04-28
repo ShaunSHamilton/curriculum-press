@@ -33,11 +33,6 @@ export default defineConfig(async () => ({
         secure: false,
         rewrite: (path: string) => path.replace(/^\/api/, "/api"),
       },
-      "/auth": {
-        target: `http://127.0.0.1:${process.env.PORT ?? "8080"}`,
-        changeOrigin: true,
-        secure: false,
-      },
       // Ping/health endpoint
       "/status": {
         target: `http://127.0.0.1:${process.env.PORT ?? "8080"}`,

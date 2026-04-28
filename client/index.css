@@ -489,6 +489,10 @@ pre {
   text-align: center;
 }
 
+.workspace-shell.is-collapsed .sidebar-brand {
+  justify-content: center;
+}
+
 .sidebar-section {
   overflow: hidden;
 }

@@ -1,7 +1,36 @@
+import { Component } from "react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { clsx } from "clsx";
 
-function cx(...values: Array<string | false | null | undefined>) {
-  return values.filter(Boolean).join(" ");
+const cx = clsx;
+
+export class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="workspace-empty">
+          <div className="card">
+            <header className="card-header">
+              <div>
+                <h2>Something went wrong</h2>
+                <p>{(this.state.error as Error).message}</p>
+              </div>
+            </header>
+            <button className="button button-secondary" onClick={() => this.setState({ error: null })} type="button">
+              Try again
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

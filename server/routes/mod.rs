@@ -129,7 +129,7 @@ pub fn api_router() -> Router<ServerState> {
             get(list_members).post(add_member),
         )
         .route("/projects", get(list_projects).post(create_project))
-        .route("/projects/mine", get(list_my_projects))
+        .route("/users/{user_id}/projects", get(list_my_projects))
         .route(
             "/projects/{project_id}",
             get(get_project).patch(update_project),

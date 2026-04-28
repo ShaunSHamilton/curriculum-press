@@ -98,7 +98,7 @@ export function listProjects(userId: string, organizationId: string) {
 }
 
 export function listMyProjects(userId: string) {
-  return apiFetch<Project[]>("/projects/mine", { userId });
+  return apiFetch<Project[]>(`/users/${userId}/projects`, { userId });
 }
 
 export function createProject(
