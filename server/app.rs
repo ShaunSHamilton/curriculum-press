@@ -51,9 +51,13 @@ pub async fn app(env_vars: EnvVars) -> Result<Router, Error> {
     };
 
     let app = Router::new()
-        .route("/healthz", get(get_status_ping))
-        .route("/status/ping", get(get_status_ping))
-        .nest("/api/v1", api_router())
+        .nest(
+            "/api",
+            Router::new()
+                .route("/healthz", get(get_status_ping))
+                .route("/status/ping", get(get_status_ping))
+                .nest("/v1", api_router()),
+        )
         .with_state(state)
         .fallback_service(ServeDir::new("dist").not_found_service(ServeFile::new("dist/index.html")))
         .layer(cors)

@@ -258,7 +258,7 @@ function LandingPage() {
 
   useEffect(() => {
     if (!userId) return;
-    void navigate({ to: "/projects/$userId", params: { userId }, replace: true });
+    void navigate({ to: "/projects", replace: true });
   }, [navigate, userId]);
 
   if (userId) {
@@ -371,7 +371,7 @@ function AppShell() {
           <SidebarNavButton
             collapsed={sidebarCollapsed}
             label="My Projects"
-            onClick={() => void navigate({ to: "/projects/$userId", params: { userId } })}
+            onClick={() => void navigate({ to: "/projects" })}
           />
           <SidebarNavButton
             collapsed={sidebarCollapsed}
@@ -1332,9 +1332,23 @@ function NotFoundPage() {
   );
 }
 
+function ErrorPage({ error }: { error: Error }) {
+  const navigate = useNavigate();
+  return (
+    <div className="workspace-empty">
+      <Card subtitle={error.message || "Something went wrong."} title="Error">
+        <Button onClick={() => void navigate({ to: "/" })} type="button" variant="secondary">
+          Back to Home
+        </Button>
+      </Card>
+    </div>
+  );
+}
+
 export const rootRoute = createRootRoute({
   component: RootComponent,
   notFoundComponent: NotFoundPage,
+  errorComponent: ErrorPage,
 });
 
 const homeRoute = createRoute({
@@ -1351,25 +1365,39 @@ const appRoute = createRoute({
 
 const myProjectsRoute = createRoute({
   getParentRoute: () => appRoute,
-  path: "projects/$userId",
+  path: "projects",
   component: MyProjectsPage,
 });
 
-const organizationsRoute = createRoute({
+// Layout owns the "organizations" segment — prevents prefix-collision with org-specific routes.
+const organizationsLayoutRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "organizations",
+  component: () => <Outlet />,
+});
+
+const organizationsIndexRoute = createRoute({
+  getParentRoute: () => organizationsLayoutRoute,
+  path: "/",
   component: OrganizationSelectorPage,
 });
 
+// Context route owns "$organizationId" — children only see "projects" / "settings".
+const organizationContextRoute = createRoute({
+  getParentRoute: () => organizationsLayoutRoute,
+  path: "$organizationId",
+  component: () => <Outlet />,
+});
+
 const organizationProjectsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "organizations/$organizationId/projects",
+  getParentRoute: () => organizationContextRoute,
+  path: "projects",
   component: OrganizationProjectsPage,
 });
 
 const organizationSettingsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "organizations/$organizationId/settings",
+  getParentRoute: () => organizationContextRoute,
+  path: "settings",
   component: OrganizationSettingsPage,
 });
 
@@ -1383,9 +1411,10 @@ export const routeTree = rootRoute.addChildren([
   homeRoute,
   appRoute.addChildren([
     myProjectsRoute,
-    organizationsRoute,
-    organizationProjectsRoute,
-    organizationSettingsRoute,
+    organizationsLayoutRoute.addChildren([
+      organizationsIndexRoute,
+      organizationContextRoute.addChildren([organizationProjectsRoute, organizationSettingsRoute]),
+    ]),
     projectBuilderRoute,
   ]),
 ]);
