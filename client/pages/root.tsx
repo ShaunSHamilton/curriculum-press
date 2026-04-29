@@ -291,7 +291,7 @@ function LandingPage() {
 }
 
 function AppShell() {
-  const { userId, selectedOrganizationId, setSelectedOrganizationId, sidebarCollapsed, setSidebarCollapsed } =
+  const { userId, setUserId, selectedOrganizationId, setSelectedOrganizationId, sidebarCollapsed, setSidebarCollapsed } =
     useAppSession();
   const navigate = useNavigate();
 
@@ -307,6 +307,12 @@ function AppShell() {
     queryKey: ["organizations", userId],
     queryFn: () => listOrganizations(userId),
   });
+
+  useEffect(() => {
+    if (!meQuery.isError) return;
+    setUserId("");
+    setSelectedOrganizationId("");
+  }, [meQuery.isError, setUserId, setSelectedOrganizationId]);
 
   useEffect(() => {
     const organizations = organizationsQuery.data ?? [];
