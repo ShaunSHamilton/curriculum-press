@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import {
+  Link,
   Outlet,
   createRootRoute,
   createRoute,
@@ -293,7 +294,6 @@ function LandingPage() {
 function AppShell() {
   const { userId, setUserId, selectedOrganizationId, setSelectedOrganizationId, sidebarCollapsed, setSidebarCollapsed } =
     useAppSession();
-  const navigate = useNavigate();
 
   const meQuery = useQuery({
     enabled: Boolean(userId),
@@ -374,40 +374,19 @@ function AppShell() {
         </Card>
 
         <nav className="sidebar-nav">
-          <SidebarNavButton
-            collapsed={sidebarCollapsed}
-            label="My Projects"
-            onClick={() => void navigate({ to: "/projects" })}
-          />
-          <SidebarNavButton
-            collapsed={sidebarCollapsed}
-            label="Organizations"
-            onClick={() => void navigate({ to: "/organizations" })}
-          />
-          <SidebarNavButton
-            collapsed={sidebarCollapsed}
-            disabled={!selectedOrganizationId}
-            label="Org Projects"
-            onClick={() => {
-              if (!selectedOrganizationId) return;
-              void navigate({
-                to: "/organizations/$organizationId/projects",
-                params: { organizationId: selectedOrganizationId },
-              });
-            }}
-          />
-          <SidebarNavButton
-            collapsed={sidebarCollapsed}
-            disabled={!selectedOrganizationId}
-            label="Org Settings"
-            onClick={() => {
-              if (!selectedOrganizationId) return;
-              void navigate({
-                to: "/organizations/$organizationId/settings",
-                params: { organizationId: selectedOrganizationId },
-              });
-            }}
-          />
+          <SidebarNavLink collapsed={sidebarCollapsed} label="My Projects" to="/projects" />
+          <SidebarNavLink collapsed={sidebarCollapsed} label="Organizations" to="/organizations" />
+          {selectedOrganizationId ? (
+            <SidebarNavLink
+              collapsed={sidebarCollapsed}
+              label="Org Projects"
+              params={{ organizationId: selectedOrganizationId }}
+              to="/organizations/$organizationId/projects"
+            />
+          ) : (
+            <SidebarNavLink collapsed={sidebarCollapsed} disabled label="Org Projects" />
+          )}
+          <SidebarNavLink collapsed={sidebarCollapsed} label="Settings" to="/settings" />
         </nav>
       </aside>
 
@@ -418,26 +397,39 @@ function AppShell() {
   );
 }
 
-function SidebarNavButton({
+function SidebarNavLink({
   collapsed,
   disabled,
   label,
-  onClick,
+  params,
+  to,
 }: {
   collapsed: boolean;
   disabled?: boolean;
   label: string;
-  onClick: () => void;
+  params?: Record<string, string>;
+  to?: string;
 }) {
+  const className = `sidebar-nav-button ${collapsed ? "is-collapsed" : ""}`;
+  const content = <strong>{collapsed ? label.slice(0, 2).toUpperCase() : label}</strong>;
+
+  if (disabled || !to) {
+    return (
+      <button className={className} disabled type="button">
+        {content}
+      </button>
+    );
+  }
+
   return (
-    <button
-      className={`sidebar-nav-button ${collapsed ? "is-collapsed" : ""}`}
-      disabled={disabled}
-      onClick={onClick}
-      type="button"
+    <Link
+      activeProps={{ className: `${className} is-active` }}
+      className={className}
+      params={params as never}
+      to={to}
     >
-      <strong>{collapsed ? label.slice(0, 2).toUpperCase() : label}</strong>
-    </button>
+      {content}
+    </Link>
   );
 }
 
@@ -485,6 +477,7 @@ function MyProjectsPage() {
 function OrganizationSelectorPage() {
   const { userId, setSelectedOrganizationId } = useAppSession();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [newOrgName, setNewOrgName] = useState("");
 
   const organizationsQuery = useQuery({
@@ -495,12 +488,15 @@ function OrganizationSelectorPage() {
 
   const createOrganizationMutation = useMutation({
     mutationFn: (payload: { name: string }) => createOrganization(userId, payload),
-    onSuccess: (organization) => {
+    onSuccess: async (organization) => {
       setNewOrgName("");
+      queryClient.setQueryData<Organization[]>(["organizations", userId], (existing) => {
+        const list = existing ?? [];
+        return list.some((org) => org.id === organization.id) ? list : [...list, organization];
+      });
       setSelectedOrganizationId(organization.id);
       toast.success("Organization created");
-      void organizationsQuery.refetch();
-      void navigate({
+      await navigate({
         to: "/organizations/$organizationId/projects",
         params: { organizationId: organization.id },
       });
@@ -565,10 +561,7 @@ function OrganizationSelectorPage() {
                     <Button
                       onClick={() => {
                         setSelectedOrganizationId(org.id);
-                        void navigate({
-                          to: "/organizations/$organizationId/settings",
-                          params: { organizationId: org.id },
-                        });
+                        void navigate({ to: "/settings" });
                       }}
                       type="button"
                       variant="ghost"
@@ -638,17 +631,34 @@ function OrganizationProjectsPage() {
   );
 }
 
-function OrganizationSettingsPage() {
-  const { organizationId } = useParams({ from: "/organizations/$organizationId/settings" });
-  const { userId, setSelectedOrganizationId } = useAppSession();
+type SettingsTab = "profile" | "organization" | "projects";
+
+function SettingsPage() {
+  const { userId, selectedOrganizationId, setSelectedOrganizationId } = useAppSession();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<SettingsTab>("profile");
   const [memberEmail, setMemberEmail] = useState("");
   const [memberName, setMemberName] = useState("");
+
+  const meQuery = useQuery({
+    enabled: Boolean(userId),
+    queryKey: ["me", userId],
+    queryFn: () => getMe(userId),
+  });
 
   const organizationsQuery = useQuery({
     enabled: Boolean(userId),
     queryKey: ["organizations", userId],
     queryFn: () => listOrganizations(userId),
   });
+
+  const projectsQuery = useQuery({
+    enabled: Boolean(userId),
+    queryKey: ["projects", "mine", userId],
+    queryFn: () => listMyProjects(userId),
+  });
+
+  const organizationId = selectedOrganizationId;
 
   const membersQuery = useQuery({
     enabled: Boolean(userId && organizationId),
@@ -667,66 +677,149 @@ function OrganizationSettingsPage() {
     onError: (error) => toast.error(error.message),
   });
 
-  useEffect(() => {
-    setSelectedOrganizationId(organizationId);
-  }, [organizationId, setSelectedOrganizationId]);
-
   const organization =
     organizationsQuery.data?.find((candidate) => candidate.id === organizationId) ?? null;
 
   return (
     <div className="stack">
       <PageHeader
-        title={organization ? `${organization.name} Settings` : "Organization Settings"}
-        subtitle="Manage members and organization details."
+        title="Settings"
+        subtitle="Manage your profile, organization members, and projects from one place."
       />
-      <Card
-        subtitle="Members belong to this organization and gain access to its collaborative project workspace."
-        title="Members"
-      >
+      <Tabs
+        items={[
+          { label: "Profile", value: "profile" },
+          { label: "Organization", value: "organization" },
+          { label: "Projects", value: "projects" },
+        ]}
+        onChange={(value) => setTab(value as SettingsTab)}
+        value={tab}
+      />
+
+      {tab === "profile" ? (
+        <Card subtitle="Your account details." title="Profile">
+          {meQuery.data ? (
+            <div className="stack-sm">
+              <Field label="Name">
+                <Input readOnly value={meQuery.data.name} />
+              </Field>
+              <Field label="Email">
+                <Input readOnly value={meQuery.data.email} />
+              </Field>
+              <Field label="User ID">
+                <Input readOnly value={meQuery.data.id} />
+              </Field>
+            </div>
+          ) : (
+            <EmptyState body="Loading profile." title="Profile" />
+          )}
+        </Card>
+      ) : null}
+
+      {tab === "organization" ? (
         <div className="stack">
-          {(membersQuery.data ?? []).length ? (
-            <div className="member-list">
-              {(membersQuery.data ?? []).map((member: OrganizationMember) => (
-                <div className="member-row" key={member.id}>
-                  <span>{member.userId.slice(0, 8)}</span>
-                  <Badge>{member.role}</Badge>
-                </div>
+          <Card subtitle="Pick an organization to manage." title="Active Organization">
+            {(organizationsQuery.data ?? []).length ? (
+              <Field label="Organization">
+                <Select
+                  onChange={(event) => setSelectedOrganizationId(event.currentTarget.value)}
+                  value={organizationId}
+                >
+                  <option value="">Select organization</option>
+                  {(organizationsQuery.data ?? []).map((org) => (
+                    <option key={org.id} value={org.id}>
+                      {org.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            ) : (
+              <EmptyState
+                body="Create an organization to collaborate with teammates."
+                title="No Organizations Yet"
+              />
+            )}
+          </Card>
+
+          {organization ? (
+            <Card subtitle={`Members of ${organization.name}.`} title="Members">
+              <div className="stack">
+                {(membersQuery.data ?? []).length ? (
+                  <div className="member-list">
+                    {(membersQuery.data ?? []).map((member: OrganizationMember) => (
+                      <div className="member-row" key={member.id}>
+                        <span>{member.userId.slice(0, 8)}</span>
+                        <Badge>{member.role}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    body="Add a teammate to grant them access to this organization's projects."
+                    title="No Members Yet"
+                  />
+                )}
+                <Field label="Member Name">
+                  <Input
+                    onChange={(event) => setMemberName(event.currentTarget.value)}
+                    value={memberName}
+                  />
+                </Field>
+                <Field hint="Required" label="Member Email" required>
+                  <Input
+                    onChange={(event) => setMemberEmail(event.currentTarget.value)}
+                    required
+                    value={memberEmail}
+                  />
+                </Field>
+                <Button
+                  disabled={!memberEmail.trim() || addMemberMutation.isPending}
+                  onClick={() => {
+                    const result = memberSchema.safeParse({ email: memberEmail, name: memberName });
+                    if (!result.success) { toast.error(firstZodError(result)); return; }
+                    addMemberMutation.mutate({ email: memberEmail, name: memberName });
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  Add Member
+                </Button>
+              </div>
+            </Card>
+          ) : null}
+        </div>
+      ) : null}
+
+      {tab === "projects" ? (
+        <Card
+          subtitle="Open a project to edit its details and curriculum."
+          title="Your Projects"
+        >
+          {(projectsQuery.data ?? []).length ? (
+            <div className="project-list">
+              {(projectsQuery.data ?? []).map((project) => (
+                <button
+                  className="project-list-item"
+                  key={project.id}
+                  onClick={() =>
+                    void navigate({ to: "/projects/$projectId", params: { projectId: project.id } })
+                  }
+                  type="button"
+                >
+                  <strong>{project.name}</strong>
+                  <span>{project.status}</span>
+                  {project.description ? <p>{project.description}</p> : null}
+                </button>
               ))}
             </div>
           ) : (
             <EmptyState
-              body="Add a teammate to grant them access to this organization's projects."
-              title="No Members Yet"
+              body="Create a project from the Projects page to edit its settings."
+              title="No Projects Yet"
             />
           )}
-          <Field label="Member Name">
-            <Input
-              onChange={(event) => setMemberName(event.currentTarget.value)}
-              value={memberName}
-            />
-          </Field>
-          <Field hint="Required" label="Member Email" required>
-            <Input
-              onChange={(event) => setMemberEmail(event.currentTarget.value)}
-              required
-              value={memberEmail}
-            />
-          </Field>
-          <Button
-            disabled={!memberEmail.trim() || addMemberMutation.isPending}
-            onClick={() => {
-              const result = memberSchema.safeParse({ email: memberEmail, name: memberName });
-              if (!result.success) { toast.error(firstZodError(result)); return; }
-              addMemberMutation.mutate({ email: memberEmail, name: memberName });
-            }}
-            type="button"
-            variant="secondary"
-          >
-            Add Member
-          </Button>
-        </div>
-      </Card>
+        </Card>
+      ) : null}
     </div>
   );
 }
@@ -1401,10 +1494,10 @@ const organizationProjectsRoute = createRoute({
   component: OrganizationProjectsPage,
 });
 
-const organizationSettingsRoute = createRoute({
-  getParentRoute: () => organizationContextRoute,
+const settingsRoute = createRoute({
+  getParentRoute: () => appRoute,
   path: "settings",
-  component: OrganizationSettingsPage,
+  component: SettingsPage,
 });
 
 const projectBuilderRoute = createRoute({
@@ -1419,8 +1512,9 @@ export const routeTree = rootRoute.addChildren([
     myProjectsRoute,
     organizationsLayoutRoute.addChildren([
       organizationsIndexRoute,
-      organizationContextRoute.addChildren([organizationProjectsRoute, organizationSettingsRoute]),
+      organizationContextRoute.addChildren([organizationProjectsRoute]),
     ]),
+    settingsRoute,
     projectBuilderRoute,
   ]),
 ]);
