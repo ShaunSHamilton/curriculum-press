@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "vite",
+    "start": "bash scripts/start.sh",
     "prisma": "prisma",
     "develop:server": "cargo run",
     "build": "tsc && vite build",
