@@ -156,7 +156,7 @@ function RootComponent() {
   );
 }
 
-function AuthScreen() {
+function AuthCard() {
   const queryClient = useQueryClient();
   const { setUserId } = useAppSession();
   const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
@@ -184,87 +184,108 @@ function AuthScreen() {
   });
 
   return (
-    <div className="auth-shell">
-      <Card
-        className="auth-card"
-        subtitle="Build interactive curricula with reusable block templates, project-level previews, and exportable learner experiences."
-        title="Curriculum Press"
-      >
-        <Tabs
-          items={[
-            { label: "Sign Up", value: "signup" },
-            { label: "Sign In", value: "signin" },
-          ]}
-          onChange={(value) => setAuthMode(value as "signup" | "signin")}
-          value={authMode}
-        />
-        <div className="stack">
-          {authMode === "signup" ? (
-            <Field hint="Required" label="Name" required>
-              <Input
-                onChange={(event) => {
-                  const value = event.currentTarget.value;
-                  setAuthForm((current) => ({ ...current, name: value }));
-                }}
-                required
-                value={authForm.name}
-              />
-            </Field>
-          ) : null}
-          <Field hint="Required" label="Email" required>
+    <Card
+      className="auth-card"
+      subtitle="Create an account or sign in to start building."
+      title="Get Started"
+    >
+      <Tabs
+        items={[
+          { label: "Sign Up", value: "signup" },
+          { label: "Sign In", value: "signin" },
+        ]}
+        onChange={(value) => setAuthMode(value as "signup" | "signin")}
+        value={authMode}
+      />
+      <div className="stack">
+        {authMode === "signup" ? (
+          <Field hint="Required" label="Name" required>
             <Input
               onChange={(event) => {
                 const value = event.currentTarget.value;
-                setAuthForm((current) => ({ ...current, email: value }));
+                setAuthForm((current) => ({ ...current, name: value }));
               }}
               required
-              value={authForm.email}
+              value={authForm.name}
             />
           </Field>
-          {(signUpMutation.error || signInMutation.error) ? (
-            <p className="inline-error">{(signUpMutation.error ?? signInMutation.error)?.message}</p>
-          ) : null}
-          <Button
-            onClick={() => {
-              if (authMode === "signup") {
-                const result = authSchema.safeParse(authForm);
-                if (!result.success) { toast.error(firstZodError(result)); return; }
-                signUpMutation.mutate(authForm);
-                return;
-              }
-              const result = signInSchema.safeParse({ email: authForm.email });
-              if (!result.success) { toast.error(firstZodError(result)); return; }
-              signInMutation.mutate({ email: authForm.email });
+        ) : null}
+        <Field hint="Required" label="Email" required>
+          <Input
+            onChange={(event) => {
+              const value = event.currentTarget.value;
+              setAuthForm((current) => ({ ...current, email: value }));
             }}
-            type="button"
-          >
-            {authMode === "signup" ? "Create Account" : "Sign In"}
-          </Button>
-        </div>
-      </Card>
+            required
+            value={authForm.email}
+          />
+        </Field>
+        {(signUpMutation.error || signInMutation.error) ? (
+          <p className="inline-error">{(signUpMutation.error ?? signInMutation.error)?.message}</p>
+        ) : null}
+        <Button
+          onClick={() => {
+            if (authMode === "signup") {
+              const result = authSchema.safeParse(authForm);
+              if (!result.success) { toast.error(firstZodError(result)); return; }
+              signUpMutation.mutate(authForm);
+              return;
+            }
+            const result = signInSchema.safeParse({ email: authForm.email });
+            if (!result.success) { toast.error(firstZodError(result)); return; }
+            signInMutation.mutate({ email: authForm.email });
+          }}
+          type="button"
+        >
+          {authMode === "signup" ? "Create Account" : "Sign In"}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+function AuthScreen() {
+  return (
+    <div className="auth-shell">
+      <AuthCard />
     </div>
   );
 }
 
-function HomeRoute() {
+function LandingPage() {
   const { userId } = useAppSession();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!userId) {
-      return;
-    }
-
+    if (!userId) return;
     void navigate({ to: "/projects/$userId", params: { userId }, replace: true });
   }, [navigate, userId]);
 
-  if (!userId) {
-    return <AuthScreen />;
+  if (userId) {
+    return (
+      <div className="workspace-empty">
+        <Card subtitle="Loading workspace." title="Redirecting" />
+      </div>
+    );
   }
 
   return (
-    <div className="workspace-empty">
-      <Card subtitle="Loading your workspace routes." title="Redirecting" />
+    <div className="landing-shell">
+      <div className="landing-hero">
+        <span className="eyebrow">Builder Platform</span>
+        <h1>Curriculum Press</h1>
+        <p>
+          Compose interactive curricula from reusable block templates. Organize projects across team
+          workspaces, preview the full learner experience, and export a portable curriculum any
+          front end can play back.
+        </p>
+        <ul className="landing-features">
+          <li>Six block types: tile match, category sort, sequence sorter, interactive diagram, syntax sprint, binary blitz</li>
+          <li>Team workspaces with role-based member access</li>
+          <li>Export to JSON or consume via the public REST API</li>
+        </ul>
+      </div>
+      <AuthCard />
     </div>
   );
 }
@@ -273,8 +294,6 @@ function AppShell() {
   const { userId, selectedOrganizationId, setSelectedOrganizationId, sidebarCollapsed, setSidebarCollapsed } =
     useAppSession();
   const navigate = useNavigate();
-  const [showOrganizationCreator, setShowOrganizationCreator] = useState(false);
-  const [organizationName, setOrganizationName] = useState("");
 
   const meQuery = useQuery({
     enabled: Boolean(userId),
@@ -289,35 +308,20 @@ function AppShell() {
     queryFn: () => listOrganizations(userId),
   });
 
-  const createOrganizationMutation = useMutation({
-    mutationFn: (payload: { name: string }) => createOrganization(userId, payload),
-    onSuccess: (organization) => {
-      setOrganizationName("");
-      setShowOrganizationCreator(false);
-      setSelectedOrganizationId(organization.id);
-      toast.success("Organization created");
-      void navigate({
-        to: "/organizations/$organizationId/projects",
-        params: { organizationId: organization.id },
-      });
-    },
-    onError: (error) => toast.error(error.message),
-  });
-
   useEffect(() => {
     const organizations = organizationsQuery.data ?? [];
-    if (!organizations.length) {
-      return;
-    }
-
-    if (!organizations.some((organization) => organization.id === selectedOrganizationId)) {
-      setSelectedOrganizationId(organizations[0]?.id ?? "");
+    if (!selectedOrganizationId || !organizations.length) return;
+    if (!organizations.some((org) => org.id === selectedOrganizationId)) {
+      setSelectedOrganizationId("");
     }
   }, [organizationsQuery.data, selectedOrganizationId, setSelectedOrganizationId]);
 
   if (!userId) {
     return <AuthScreen />;
   }
+
+  const selectedOrganization =
+    (organizationsQuery.data ?? []).find((org) => org.id === selectedOrganizationId) ?? null;
 
   return (
     <div className={`workspace-shell ${sidebarCollapsed ? "is-collapsed" : ""}`}>
@@ -339,71 +343,22 @@ function AppShell() {
           </Button>
         </div>
 
-        <Card className="sidebar-section" subtitle={!sidebarCollapsed ? "Compact workspace controls." : undefined} title={!sidebarCollapsed ? "Workspace" : undefined}>
+        <Card
+          className="sidebar-section"
+          subtitle={!sidebarCollapsed ? "Your session and active workspace." : undefined}
+          title={!sidebarCollapsed ? "Workspace" : undefined}
+        >
           <div className="stack-sm">
             {!sidebarCollapsed ? (
               <>
                 <Badge tone="accent">{meQuery.data?.name ?? "Author"}</Badge>
-                <Field label="Current Organization">
-                  <Select
-                    onChange={(event) => {
-                      const organizationId = event.currentTarget.value;
-                      setSelectedOrganizationId(organizationId);
-                      if (organizationId) {
-                        void navigate({
-                          to: "/organizations/$organizationId/projects",
-                          params: { organizationId },
-                        });
-                      }
-                    }}
-                    value={selectedOrganizationId}
-                  >
-                    <option value="">Select organization</option>
-                    {(organizationsQuery.data ?? []).map((organization) => (
-                      <option key={organization.id} value={organization.id}>
-                        {organization.name}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                {showOrganizationCreator ? (
-                  <div className="stack-sm">
-                    <Field hint="Required" label="New Organization" required>
-                      <Input
-                        onChange={(event) => setOrganizationName(event.currentTarget.value)}
-                        placeholder="Northwind Training"
-                        required
-                        value={organizationName}
-                      />
-                    </Field>
-                    <div className="button-row">
-                      <Button
-                        disabled={!organizationName.trim() || createOrganizationMutation.isPending}
-                        onClick={() => {
-                          const result = organizationSchema.safeParse({ name: organizationName });
-                          if (!result.success) { toast.error(firstZodError(result)); return; }
-                          createOrganizationMutation.mutate({ name: organizationName });
-                        }}
-                        type="button"
-                      >
-                        Create
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setShowOrganizationCreator(false);
-                          setOrganizationName("");
-                        }}
-                        type="button"
-                        variant="ghost"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+                {selectedOrganization ? (
+                  <div className="org-indicator">
+                    <span className="eyebrow">Organization</span>
+                    <strong>{selectedOrganization.name}</strong>
                   </div>
                 ) : (
-                  <Button onClick={() => setShowOrganizationCreator(true)} type="button" variant="secondary">
-                    New Organization
-                  </Button>
+                  <p className="sidebar-hint">No organization selected</p>
                 )}
               </>
             ) : (
@@ -420,15 +375,29 @@ function AppShell() {
           />
           <SidebarNavButton
             collapsed={sidebarCollapsed}
+            label="Organizations"
+            onClick={() => void navigate({ to: "/organizations" })}
+          />
+          <SidebarNavButton
+            collapsed={sidebarCollapsed}
             disabled={!selectedOrganizationId}
-            label="Organization Projects"
+            label="Org Projects"
             onClick={() => {
-              if (!selectedOrganizationId) {
-                return;
-              }
-
+              if (!selectedOrganizationId) return;
               void navigate({
                 to: "/organizations/$organizationId/projects",
+                params: { organizationId: selectedOrganizationId },
+              });
+            }}
+          />
+          <SidebarNavButton
+            collapsed={sidebarCollapsed}
+            disabled={!selectedOrganizationId}
+            label="Org Settings"
+            onClick={() => {
+              if (!selectedOrganizationId) return;
+              void navigate({
+                to: "/organizations/$organizationId/settings",
                 params: { organizationId: selectedOrganizationId },
               });
             }}
@@ -507,12 +476,119 @@ function MyProjectsPage() {
   );
 }
 
+function OrganizationSelectorPage() {
+  const { userId, setSelectedOrganizationId } = useAppSession();
+  const navigate = useNavigate();
+  const [newOrgName, setNewOrgName] = useState("");
+
+  const organizationsQuery = useQuery({
+    enabled: Boolean(userId),
+    queryKey: ["organizations", userId],
+    queryFn: () => listOrganizations(userId),
+  });
+
+  const createOrganizationMutation = useMutation({
+    mutationFn: (payload: { name: string }) => createOrganization(userId, payload),
+    onSuccess: (organization) => {
+      setNewOrgName("");
+      setSelectedOrganizationId(organization.id);
+      toast.success("Organization created");
+      void organizationsQuery.refetch();
+      void navigate({
+        to: "/organizations/$organizationId/projects",
+        params: { organizationId: organization.id },
+      });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  return (
+    <div className="stack">
+      <PageHeader
+        title="Organizations"
+        subtitle="Select a workspace or create a new organization to collaborate with your team."
+      />
+      <div className="page-grid">
+        <Card subtitle="Create a shared workspace for your team's projects." title="New Organization">
+          <div className="stack">
+            <Field hint="Required" label="Name" required>
+              <Input
+                onChange={(event) => setNewOrgName(event.currentTarget.value)}
+                placeholder="Northwind Training"
+                required
+                value={newOrgName}
+              />
+            </Field>
+            <Button
+              disabled={!newOrgName.trim() || createOrganizationMutation.isPending}
+              onClick={() => {
+                const result = organizationSchema.safeParse({ name: newOrgName });
+                if (!result.success) { toast.error(firstZodError(result)); return; }
+                createOrganizationMutation.mutate({ name: newOrgName });
+              }}
+              type="button"
+            >
+              Create Organization
+            </Button>
+          </div>
+        </Card>
+
+        <Card subtitle="Organizations you belong to." title="Your Organizations">
+          {(organizationsQuery.data ?? []).length ? (
+            <div className="org-list">
+              {(organizationsQuery.data ?? []).map((org) => (
+                <div className="org-list-item" key={org.id}>
+                  <div>
+                    <strong>{org.name}</strong>
+                    <span>{org.slug}</span>
+                  </div>
+                  <div className="button-row">
+                    <Button
+                      onClick={() => {
+                        setSelectedOrganizationId(org.id);
+                        void navigate({
+                          to: "/organizations/$organizationId/projects",
+                          params: { organizationId: org.id },
+                        });
+                      }}
+                      type="button"
+                      variant="secondary"
+                    >
+                      Projects
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setSelectedOrganizationId(org.id);
+                        void navigate({
+                          to: "/organizations/$organizationId/settings",
+                          params: { organizationId: org.id },
+                        });
+                      }}
+                      type="button"
+                      variant="ghost"
+                    >
+                      Settings
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              body="Create your first organization to start collaborating with your team."
+              title="No Organizations Yet"
+            />
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 function OrganizationProjectsPage() {
   const { organizationId } = useParams({ from: "/organizations/$organizationId/projects" });
   const { userId, setSelectedOrganizationId } = useAppSession();
   const navigate = useNavigate();
-  const [memberEmail, setMemberEmail] = useState("");
-  const [memberName, setMemberName] = useState("");
 
   const organizationsQuery = useQuery({
     enabled: Boolean(userId),
@@ -524,6 +600,48 @@ function OrganizationProjectsPage() {
     enabled: Boolean(userId && organizationId),
     queryKey: ["projects", userId, organizationId],
     queryFn: () => listProjects(userId, organizationId),
+  });
+
+  useEffect(() => {
+    setSelectedOrganizationId(organizationId);
+  }, [organizationId, setSelectedOrganizationId]);
+
+  const organization =
+    organizationsQuery.data?.find((candidate) => candidate.id === organizationId) ?? null;
+
+  return (
+    <div className="stack">
+      <PageHeader
+        title={organization ? `${organization.name} Projects` : "Organization Projects"}
+        subtitle="Projects shared inside this organization."
+      />
+      <ProjectCreatePanel
+        fixedOrganizationId={organizationId}
+        organizations={organizationsQuery.data ?? []}
+        userId={userId}
+        onCreated={(projectId) => void navigate({ to: "/projects/$projectId", params: { projectId } })}
+      />
+      <ProjectsListCard
+        emptyBody="This organization doesn't have any projects yet."
+        emptyTitle="No Organization Projects"
+        projects={projectsQuery.data ?? []}
+        subtitle="All projects inside this organization."
+        title="Organization Projects"
+      />
+    </div>
+  );
+}
+
+function OrganizationSettingsPage() {
+  const { organizationId } = useParams({ from: "/organizations/$organizationId/settings" });
+  const { userId, setSelectedOrganizationId } = useAppSession();
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberName, setMemberName] = useState("");
+
+  const organizationsQuery = useQuery({
+    enabled: Boolean(userId),
+    queryKey: ["organizations", userId],
+    queryFn: () => listOrganizations(userId),
   });
 
   const membersQuery = useQuery({
@@ -553,72 +671,56 @@ function OrganizationProjectsPage() {
   return (
     <div className="stack">
       <PageHeader
-        title={organization ? `${organization.name} Projects` : "Organization Projects"}
-        subtitle="Projects shared inside the selected organization, plus the members who can collaborate on them."
+        title={organization ? `${organization.name} Settings` : "Organization Settings"}
+        subtitle="Manage members and organization details."
       />
-      <div className="page-grid">
-        <ProjectCreatePanel
-          fixedOrganizationId={organizationId}
-          organizations={organizationsQuery.data ?? []}
-          userId={userId}
-          onCreated={(projectId) => void navigate({ to: "/projects/$projectId", params: { projectId } })}
-        />
-        <Card
-          subtitle="Members belong to this organization and gain access to its collaborative project workspace."
-          title="Members"
-        >
-          <div className="stack">
-            {(membersQuery.data ?? []).length ? (
-              <div className="member-list">
-                {(membersQuery.data ?? []).map((member: OrganizationMember) => (
-                  <div className="member-row" key={member.id}>
-                    <span>{member.userId.slice(0, 8)}</span>
-                    <Badge>{member.role}</Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                body="Add a teammate to grant them access to this organization's projects."
-                title="No Members Yet"
-              />
-            )}
-            <Field label="Member Name">
-              <Input
-                onChange={(event) => setMemberName(event.currentTarget.value)}
-                value={memberName}
-              />
-            </Field>
-            <Field hint="Required" label="Member Email" required>
-              <Input
-                onChange={(event) => setMemberEmail(event.currentTarget.value)}
-                required
-                value={memberEmail}
-              />
-            </Field>
-            <Button
-              disabled={!memberEmail.trim() || addMemberMutation.isPending}
-              onClick={() => {
-                const result = memberSchema.safeParse({ email: memberEmail, name: memberName });
-                if (!result.success) { toast.error(firstZodError(result)); return; }
-                addMemberMutation.mutate({ email: memberEmail, name: memberName });
-              }}
-              type="button"
-              variant="secondary"
-            >
-              Add Member
-            </Button>
-          </div>
-        </Card>
-      </div>
-
-      <ProjectsListCard
-        emptyBody="This organization doesn't have any projects yet."
-        emptyTitle="No Organization Projects"
-        projects={projectsQuery.data ?? []}
-        subtitle="All projects inside this organization."
-        title="Organization Projects"
-      />
+      <Card
+        subtitle="Members belong to this organization and gain access to its collaborative project workspace."
+        title="Members"
+      >
+        <div className="stack">
+          {(membersQuery.data ?? []).length ? (
+            <div className="member-list">
+              {(membersQuery.data ?? []).map((member: OrganizationMember) => (
+                <div className="member-row" key={member.id}>
+                  <span>{member.userId.slice(0, 8)}</span>
+                  <Badge>{member.role}</Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              body="Add a teammate to grant them access to this organization's projects."
+              title="No Members Yet"
+            />
+          )}
+          <Field label="Member Name">
+            <Input
+              onChange={(event) => setMemberName(event.currentTarget.value)}
+              value={memberName}
+            />
+          </Field>
+          <Field hint="Required" label="Member Email" required>
+            <Input
+              onChange={(event) => setMemberEmail(event.currentTarget.value)}
+              required
+              value={memberEmail}
+            />
+          </Field>
+          <Button
+            disabled={!memberEmail.trim() || addMemberMutation.isPending}
+            onClick={() => {
+              const result = memberSchema.safeParse({ email: memberEmail, name: memberName });
+              if (!result.success) { toast.error(firstZodError(result)); return; }
+              addMemberMutation.mutate({ email: memberEmail, name: memberName });
+            }}
+            type="button"
+            variant="secondary"
+          >
+            Add Member
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }
@@ -1217,14 +1319,28 @@ function ExportPanel({
   );
 }
 
+function NotFoundPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="workspace-empty">
+      <Card subtitle="The page you're looking for doesn't exist." title="404 Not Found">
+        <Button onClick={() => void navigate({ to: "/" })} type="button" variant="secondary">
+          Back to Home
+        </Button>
+      </Card>
+    </div>
+  );
+}
+
 export const rootRoute = createRootRoute({
   component: RootComponent,
+  notFoundComponent: NotFoundPage,
 });
 
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: HomeRoute,
+  component: LandingPage,
 });
 
 const appRoute = createRoute({
@@ -1239,10 +1355,22 @@ const myProjectsRoute = createRoute({
   component: MyProjectsPage,
 });
 
+const organizationsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "organizations",
+  component: OrganizationSelectorPage,
+});
+
 const organizationProjectsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "organizations/$organizationId/projects",
   component: OrganizationProjectsPage,
+});
+
+const organizationSettingsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "organizations/$organizationId/settings",
+  component: OrganizationSettingsPage,
 });
 
 const projectBuilderRoute = createRoute({
@@ -1253,5 +1381,11 @@ const projectBuilderRoute = createRoute({
 
 export const routeTree = rootRoute.addChildren([
   homeRoute,
-  appRoute.addChildren([myProjectsRoute, organizationProjectsRoute, projectBuilderRoute]),
+  appRoute.addChildren([
+    myProjectsRoute,
+    organizationsRoute,
+    organizationProjectsRoute,
+    organizationSettingsRoute,
+    projectBuilderRoute,
+  ]),
 ]);

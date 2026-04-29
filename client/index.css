@@ -497,6 +497,79 @@ pre {
   overflow: hidden;
 }
 
+.landing-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+  gap: 4rem;
+  align-items: center;
+  padding: 3rem 5rem;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.landing-hero h1 {
+  margin: 0.4rem 0 0.85rem;
+  font-size: 2.4rem;
+  line-height: 1.15;
+}
+
+.landing-hero p {
+  color: var(--text-secondary);
+  max-width: 54ch;
+  margin: 0 0 1.2rem;
+}
+
+.landing-features {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--text-muted);
+  display: grid;
+  gap: 0.5rem;
+  line-height: 1.6;
+}
+
+.org-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.org-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: rgba(8, 11, 16, 0.94);
+}
+
+.org-list-item strong {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.org-list-item span {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.org-indicator {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.org-indicator strong {
+  font-size: 0.9rem;
+}
+
+.sidebar-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
 @media (max-width: 1180px) {
   .workspace-shell {
     grid-template-columns: 1fr;
@@ -508,6 +581,12 @@ pre {
 
   .page-grid {
     grid-template-columns: 1fr;
+  }
+
+  .landing-shell {
+    grid-template-columns: 1fr;
+    padding: 2.5rem 2rem;
+    gap: 2rem;
   }
 }
 
