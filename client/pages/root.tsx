@@ -7,14 +7,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import {
-  Link,
-  Outlet,
-  createRootRoute,
-  createRoute,
-  useNavigate,
-  useParams,
-} from "@tanstack/react-router";
+import { Link, Outlet, useNavigate, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -127,7 +120,7 @@ function downloadExport(payload: ExportedCurriculum) {
   URL.revokeObjectURL(url);
 }
 
-function RootComponent() {
+export function RootComponent() {
   const [userId, setUserId] = usePersistentState(AUTH_STORAGE_KEY, "");
   const [selectedOrganizationId, setSelectedOrganizationId] = usePersistentState(
     "curriculum-press.organization-id",
@@ -253,7 +246,7 @@ function AuthScreen() {
   );
 }
 
-function LandingPage() {
+export function LandingPage() {
   const { userId } = useAppSession();
   const navigate = useNavigate();
 
@@ -291,7 +284,7 @@ function LandingPage() {
   );
 }
 
-function AppShell() {
+export function AppShell() {
   const { userId, setUserId, selectedOrganizationId, setSelectedOrganizationId, sidebarCollapsed, setSidebarCollapsed } =
     useAppSession();
 
@@ -433,7 +426,7 @@ function SidebarNavLink({
   );
 }
 
-function MyProjectsPage() {
+export function MyProjectsPage() {
   const { userId, selectedOrganizationId } = useAppSession();
   const navigate = useNavigate();
 
@@ -474,7 +467,7 @@ function MyProjectsPage() {
   );
 }
 
-function OrganizationSelectorPage() {
+export function OrganizationSelectorPage() {
   const { userId, setSelectedOrganizationId } = useAppSession();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -584,8 +577,8 @@ function OrganizationSelectorPage() {
   );
 }
 
-function OrganizationProjectsPage() {
-  const { organizationId } = useParams({ from: "/organizations/$organizationId/projects" });
+export function OrganizationProjectsPage() {
+  const { organizationId } = useParams({ from: "/app/organizations/$organizationId/projects" });
   const { userId, setSelectedOrganizationId } = useAppSession();
   const navigate = useNavigate();
 
@@ -633,7 +626,7 @@ function OrganizationProjectsPage() {
 
 type SettingsTab = "profile" | "organization" | "projects";
 
-function SettingsPage() {
+export function SettingsPage() {
   const { userId, selectedOrganizationId, setSelectedOrganizationId } = useAppSession();
   const navigate = useNavigate();
   const [tab, setTab] = useState<SettingsTab>("profile");
@@ -824,8 +817,8 @@ function SettingsPage() {
   );
 }
 
-function ProjectBuilderPage() {
-  const { projectId } = useParams({ from: "/projects/$projectId" });
+export function ProjectBuilderPage() {
+  const { projectId } = useParams({ from: "/app/projects/$projectId" });
   const { userId } = useAppSession();
   const queryClient = useQueryClient();
   const [selectedBlockId, setSelectedBlockId] = usePersistentState("curriculum-press.block-id", "");
@@ -1418,7 +1411,7 @@ function ExportPanel({
   );
 }
 
-function NotFoundPage() {
+export function NotFoundPage() {
   const navigate = useNavigate();
   return (
     <div className="workspace-empty">
@@ -1431,7 +1424,7 @@ function NotFoundPage() {
   );
 }
 
-function ErrorPage({ error }: { error: Error }) {
+export function ErrorPage({ error }: { error: Error }) {
   const navigate = useNavigate();
   return (
     <div className="workspace-empty">
@@ -1444,77 +1437,3 @@ function ErrorPage({ error }: { error: Error }) {
   );
 }
 
-export const rootRoute = createRootRoute({
-  component: RootComponent,
-  notFoundComponent: NotFoundPage,
-  errorComponent: ErrorPage,
-});
-
-const homeRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/",
-  component: LandingPage,
-});
-
-const appRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  id: "app",
-  component: AppShell,
-});
-
-const myProjectsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "projects",
-  component: MyProjectsPage,
-});
-
-// Layout owns the "organizations" segment — prevents prefix-collision with org-specific routes.
-const organizationsLayoutRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "organizations",
-  component: () => <Outlet />,
-});
-
-const organizationsIndexRoute = createRoute({
-  getParentRoute: () => organizationsLayoutRoute,
-  path: "/",
-  component: OrganizationSelectorPage,
-});
-
-// Context route owns "$organizationId" — children only see "projects" / "settings".
-const organizationContextRoute = createRoute({
-  getParentRoute: () => organizationsLayoutRoute,
-  path: "$organizationId",
-  component: () => <Outlet />,
-});
-
-const organizationProjectsRoute = createRoute({
-  getParentRoute: () => organizationContextRoute,
-  path: "projects",
-  component: OrganizationProjectsPage,
-});
-
-const settingsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "settings",
-  component: SettingsPage,
-});
-
-const projectBuilderRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "projects/$projectId",
-  component: ProjectBuilderPage,
-});
-
-export const routeTree = rootRoute.addChildren([
-  homeRoute,
-  appRoute.addChildren([
-    myProjectsRoute,
-    organizationsLayoutRoute.addChildren([
-      organizationsIndexRoute,
-      organizationContextRoute.addChildren([organizationProjectsRoute]),
-    ]),
-    settingsRoute,
-    projectBuilderRoute,
-  ]),
-]);

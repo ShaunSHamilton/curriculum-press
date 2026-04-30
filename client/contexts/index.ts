@@ -1,7 +1,7 @@
 import { createRouter } from "@tanstack/react-router";
 import { QueryClient } from "@tanstack/react-query";
 
-import { routeTree } from "../pages/root";
+import { routeTree } from "../pages/router";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
