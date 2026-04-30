@@ -15,12 +15,16 @@ export type BlockSettings = {
   difficulty?: Difficulty;
 };
 
+export type TileFace =
+  | { kind: "text"; text: string }
+  | { kind: "image"; imageUrl: string; alt?: string };
+
 export type TileMatchConfig = {
   prompt: string;
   pairs: Array<{
     id: string;
-    left: string;
-    right: string;
+    left: TileFace;
+    right: TileFace;
   }>;
 };
 
@@ -182,8 +186,16 @@ export function createDefaultBlock(type: BlockType): AnyInteractiveBlock {
         config: {
           prompt: "Match the term to its definition.",
           pairs: [
-            { id: makeId("pair"), left: "Neuron", right: "Cell that carries signals" },
-            { id: makeId("pair"), left: "Axon", right: "Long projection that sends impulses" },
+            {
+              id: makeId("pair"),
+              left: { kind: "text", text: "Neuron" },
+              right: { kind: "text", text: "Cell that carries signals" },
+            },
+            {
+              id: makeId("pair"),
+              left: { kind: "text", text: "Axon" },
+              right: { kind: "text", text: "Long projection that sends impulses" },
+            },
           ],
         },
       };
@@ -282,6 +294,10 @@ export function createDefaultBlock(type: BlockType): AnyInteractiveBlock {
   }
 }
 
+export function isTileFaceFilled(face: TileFace): boolean {
+  return face.kind === "text" ? face.text.trim().length > 0 : face.imageUrl.trim().length > 0;
+}
+
 export function validateInteractiveBlock(block: AnyInteractiveBlock): string[] {
   const messages: string[] = [];
   if (!block.title.trim()) {
@@ -296,8 +312,8 @@ export function validateInteractiveBlock(block: AnyInteractiveBlock): string[] {
       if (block.config.pairs.length < 2) {
         messages.push("Tile Match needs at least two pairs.");
       }
-      if (block.config.pairs.some((pair) => !pair.left.trim() || !pair.right.trim())) {
-        messages.push("Every Tile Match pair needs both values.");
+      if (block.config.pairs.some((pair) => !isTileFaceFilled(pair.left) || !isTileFaceFilled(pair.right))) {
+        messages.push("Every Tile Match pair needs both sides filled in.");
       }
       break;
     case "category-sort":

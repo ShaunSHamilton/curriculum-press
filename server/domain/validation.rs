@@ -13,8 +13,31 @@ struct TileMatchConfig {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct TileMatchPair {
-    left: String,
-    right: String,
+    left: TileFace,
+    right: TileFace,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+enum TileFace {
+    #[serde(rename = "text")]
+    Text { text: String },
+    #[serde(rename = "image")]
+    Image {
+        image_url: String,
+        #[serde(default)]
+        #[allow(dead_code)]
+        alt: Option<String>,
+    },
+}
+
+impl TileFace {
+    fn is_filled(&self) -> bool {
+        match self {
+            Self::Text { text } => !text.trim().is_empty(),
+            Self::Image { image_url, .. } => !image_url.trim().is_empty(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -130,7 +153,7 @@ pub fn validate_block_config(
             if parsed
                 .pairs
                 .iter()
-                .any(|pair| pair.left.trim().is_empty() || pair.right.trim().is_empty())
+                .any(|pair| !pair.left.is_filled() || !pair.right.is_filled())
             {
                 return Err(bad_request(
                     "Every Tile Match pair needs both sides filled in.",

@@ -8,6 +8,7 @@ import type {
   InteractiveDiagramConfig,
   SequenceSorterConfig,
   SyntaxSprintConfig,
+  TileFace,
   TileMatchConfig,
 } from "../types";
 import { validateInteractiveBlock } from "../types";
@@ -305,6 +306,64 @@ function ConfigEditor({
   }
 }
 
+function TileFaceEditor({
+  label,
+  face,
+  onChange,
+}: {
+  label: string;
+  face: TileFace;
+  onChange: (face: TileFace) => void;
+}) {
+  return (
+    <div className="stack">
+      <Field label={`${label} type`}>
+        <Select
+          onChange={(event) => {
+            const kind = event.currentTarget.value as TileFace["kind"];
+            if (kind === "image") {
+              onChange({ kind: "image", imageUrl: face.kind === "image" ? face.imageUrl : "", alt: face.kind === "image" ? face.alt : "" });
+            } else {
+              onChange({ kind: "text", text: face.kind === "text" ? face.text : "" });
+            }
+          }}
+          value={face.kind}
+        >
+          <option value="text">Text</option>
+          <option value="image">Image</option>
+        </Select>
+      </Field>
+      {face.kind === "text" ? (
+        <Field label={label}>
+          <Input
+            onChange={(event) => onChange({ kind: "text", text: event.currentTarget.value })}
+            value={face.text}
+          />
+        </Field>
+      ) : (
+        <>
+          <Field label={`${label} image URL`}>
+            <Input
+              onChange={(event) =>
+                onChange({ kind: "image", imageUrl: event.currentTarget.value, alt: face.alt })
+              }
+              value={face.imageUrl}
+            />
+          </Field>
+          <Field label={`${label} alt text`}>
+            <Input
+              onChange={(event) =>
+                onChange({ kind: "image", imageUrl: face.imageUrl, alt: event.currentTarget.value })
+              }
+              value={face.alt ?? ""}
+            />
+          </Field>
+        </>
+      )}
+    </div>
+  );
+}
+
 function TileMatchEditor({
   config,
   onChange,
@@ -312,6 +371,14 @@ function TileMatchEditor({
   config: TileMatchConfig;
   onChange: (config: TileMatchConfig) => void;
 }) {
+  const updatePair = (id: string, side: "left" | "right", face: TileFace) =>
+    onChange({
+      ...config,
+      pairs: config.pairs.map((candidate) =>
+        candidate.id === id ? { ...candidate, [side]: face } : candidate,
+      ),
+    });
+
   return (
     <div className="stack">
       <Field label="Prompt">
@@ -323,43 +390,30 @@ function TileMatchEditor({
       </Field>
       {config.pairs.map((pair) => (
         <div className="form-grid split" key={pair.id}>
-          <Field label="Left">
-            <Input
-              onChange={(event) =>
-                onChange({
-                  ...config,
-                  pairs: config.pairs.map((candidate) =>
-                    candidate.id === pair.id
-                      ? { ...candidate, left: event.currentTarget.value }
-                      : candidate,
-                  ),
-                })
-              }
-              value={pair.left}
-            />
-          </Field>
-          <Field label="Right">
-            <Input
-              onChange={(event) =>
-                onChange({
-                  ...config,
-                  pairs: config.pairs.map((candidate) =>
-                    candidate.id === pair.id
-                      ? { ...candidate, right: event.currentTarget.value }
-                      : candidate,
-                  ),
-                })
-              }
-              value={pair.right}
-            />
-          </Field>
+          <TileFaceEditor
+            label="Left"
+            face={pair.left}
+            onChange={(face) => updatePair(pair.id, "left", face)}
+          />
+          <TileFaceEditor
+            label="Right"
+            face={pair.right}
+            onChange={(face) => updatePair(pair.id, "right", face)}
+          />
         </div>
       ))}
       <Button
         onClick={() =>
           onChange({
             ...config,
-            pairs: [...config.pairs, { id: makeId("pair"), left: "", right: "" }],
+            pairs: [
+              ...config.pairs,
+              {
+                id: makeId("pair"),
+                left: { kind: "text", text: "" },
+                right: { kind: "text", text: "" },
+              },
+            ],
           })
         }
         type="button"

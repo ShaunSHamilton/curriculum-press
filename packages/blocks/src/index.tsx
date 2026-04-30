@@ -8,6 +8,7 @@ import type {
   InteractiveDiagramConfig,
   SequenceSorterConfig,
   SyntaxSprintConfig,
+  TileFace,
   TileMatchConfig,
 } from "./types";
 
@@ -41,12 +42,19 @@ function PlayerCard({ eyebrow, title, body, footer, children }: PlayerCardProps)
   );
 }
 
+function TileFaceContent({ face }: { face: TileFace }) {
+  if (face.kind === "image") {
+    return <img className="cp-memory-image" src={face.imageUrl} alt={face.alt ?? ""} />;
+  }
+  return <span>{face.text}</span>;
+}
+
 function TileMatchBlock({ block }: { block: InteractiveBlock<"tile-match"> }) {
   const { pairs, prompt } = block.config as TileMatchConfig;
   const deck = useMemo(() => {
     const cards = pairs.flatMap((pair) => [
-      { id: `${pair.id}-left`, pairId: pair.id, label: pair.left },
-      { id: `${pair.id}-right`, pairId: pair.id, label: pair.right },
+      { id: `${pair.id}-left`, pairId: pair.id, face: pair.left },
+      { id: `${pair.id}-right`, pairId: pair.id, face: pair.right },
     ]);
 
     return [...cards].sort(() => Math.random() - 0.5);
@@ -114,7 +122,7 @@ function TileMatchBlock({ block }: { block: InteractiveBlock<"tile-match"> }) {
               }}
               type="button"
             >
-              <span>{isRevealed ? card.label : "?"}</span>
+              {isRevealed ? <TileFaceContent face={card.face} /> : <span>?</span>}
             </button>
           );
         })}
