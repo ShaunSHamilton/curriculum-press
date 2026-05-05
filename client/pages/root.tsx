@@ -284,6 +284,64 @@ export function LandingPage() {
   );
 }
 
+function NoOrgGate() {
+  const { userId, setSelectedOrganizationId } = useAppSession();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [newOrgName, setNewOrgName] = useState("");
+
+  const createOrganizationMutation = useMutation({
+    mutationFn: (payload: { name: string }) => createOrganization(userId, payload),
+    onSuccess: async (organization) => {
+      setNewOrgName("");
+      queryClient.setQueryData<Organization[]>(["organizations", userId], (existing) => {
+        const list = existing ?? [];
+        return list.some((org) => org.id === organization.id) ? list : [...list, organization];
+      });
+      setSelectedOrganizationId(organization.id);
+      toast.success("Organization created");
+      await navigate({ to: "/organizations/$organizationId/projects", params: { organizationId: organization.id } });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  return (
+    <div className="auth-shell">
+      <div className="auth-card">
+        <Card subtitle="You need an organization to store and share projects. Create one to continue." title="Create Your Organization">
+          <div className="stack">
+            <Field hint="Required" label="Name" required>
+              <Input
+                onChange={(event) => setNewOrgName(event.currentTarget.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" || !newOrgName.trim()) return;
+                  const result = organizationSchema.safeParse({ name: newOrgName });
+                  if (!result.success) { toast.error(firstZodError(result)); return; }
+                  createOrganizationMutation.mutate({ name: newOrgName });
+                }}
+                placeholder="Northwind Training"
+                required
+                value={newOrgName}
+              />
+            </Field>
+            <Button
+              disabled={!newOrgName.trim() || createOrganizationMutation.isPending}
+              onClick={() => {
+                const result = organizationSchema.safeParse({ name: newOrgName });
+                if (!result.success) { toast.error(firstZodError(result)); return; }
+                createOrganizationMutation.mutate({ name: newOrgName });
+              }}
+              type="button"
+            >
+              Create Organization
+            </Button>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 export function AppShell() {
   const { userId, setUserId, selectedOrganizationId, setSelectedOrganizationId, sidebarCollapsed, setSidebarCollapsed } =
     useAppSession();
@@ -317,6 +375,10 @@ export function AppShell() {
 
   if (!userId) {
     return <AuthScreen />;
+  }
+
+  if (organizationsQuery.data !== undefined && organizationsQuery.data.length === 0) {
+    return <NoOrgGate />;
   }
 
   const selectedOrganization =
