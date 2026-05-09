@@ -1,8 +1,10 @@
 import type {
   AnyInteractiveBlock,
+  ApiKeyInfo,
   AuthResponse,
   BlockSettings,
   BlockType,
+  CreatedApiKey,
   ExportedCurriculum,
   Organization,
   OrganizationMember,
@@ -192,4 +194,23 @@ export function reorderBlocks(userId: string, curriculumId: string, orderedIds: 
 
 export function exportProject(userId: string, projectId: string) {
   return apiFetch<ExportedCurriculum>(`/projects/${projectId}/export`, { userId });
+}
+
+export function listApiKeys(userId: string) {
+  return apiFetch<ApiKeyInfo[]>("/api-keys", { userId });
+}
+
+export function createApiKey(
+  userId: string,
+  payload: { name: string; projectScope?: string[] | null },
+) {
+  return apiFetch<CreatedApiKey>("/api-keys", {
+    method: "POST",
+    userId,
+    body: JSON.stringify(payload),
+  });
+}
+
+export function revokeApiKey(userId: string, keyId: string) {
+  return apiFetch<void>(`/api-keys/${keyId}`, { method: "DELETE", userId });
 }

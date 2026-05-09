@@ -123,6 +123,60 @@ pub struct ExportedCurriculum {
     pub blocks: Vec<InteractiveBlock>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiKey {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub name: String,
+    pub prefix: String,
+    pub key_hash: String,
+    pub project_scope: Option<Vec<Uuid>>,
+    pub created_at: String,
+    pub last_used_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiKeyInfo {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub name: String,
+    pub prefix: String,
+    pub project_scope: Option<Vec<Uuid>>,
+    pub created_at: String,
+    pub last_used_at: Option<String>,
+}
+
+impl From<ApiKey> for ApiKeyInfo {
+    fn from(key: ApiKey) -> Self {
+        Self {
+            id: key.id,
+            user_id: key.user_id,
+            name: key.name,
+            prefix: key.prefix,
+            project_scope: key.project_scope,
+            created_at: key.created_at,
+            last_used_at: key.last_used_at,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatedApiKey {
+    pub key: ApiKeyInfo,
+    pub raw_key: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct CreateApiKeyInput {
+    pub user_id: Uuid,
+    pub name: String,
+    pub prefix: String,
+    pub project_scope: Option<Vec<Uuid>>,
+}
+
 #[derive(Debug, Clone)]
 pub struct CreateUserInput {
     pub name: String,

@@ -10,6 +10,9 @@ use http::header::ORIGIN;
 use http::header::SET_COOKIE;
 use http::header::X_CONTENT_TYPE_OPTIONS;
 use reqwest::Method;
+use rmcp::transport::streamable_http_server::{
+    StreamableHttpServerConfig, StreamableHttpService, session::local::LocalSessionManager,
+};
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
@@ -18,6 +21,7 @@ use tracing::info;
 
 use crate::domain::store::InMemoryStore;
 use crate::errors::Error;
+use crate::mcp::{auth::mcp_auth_middleware, server::CurriculumMcpServer};
 
 use crate::config::EnvVars;
 use crate::routes::{api_router, get_status_ping};
@@ -50,6 +54,22 @@ pub async fn app(env_vars: EnvVars) -> Result<Router, Error> {
         store: InMemoryStore::new(),
     };
 
+    let mcp_service: StreamableHttpService<CurriculumMcpServer, LocalSessionManager> = {
+        let store = state.store.clone();
+        StreamableHttpService::new(
+            move || Ok(CurriculumMcpServer::new(store.clone())),
+            LocalSessionManager::default().into(),
+            StreamableHttpServerConfig::default(),
+        )
+    };
+
+    let mcp_router = Router::new()
+        .nest_service("/mcp", mcp_service)
+        .layer(axum::middleware::from_fn_with_state(
+            state.store.clone(),
+            mcp_auth_middleware,
+        ));
+
     let app = Router::new()
         .nest(
             "/api",
@@ -58,6 +78,7 @@ pub async fn app(env_vars: EnvVars) -> Result<Router, Error> {
                 .route("/status/ping", get(get_status_ping))
                 .nest("/v1", api_router()),
         )
+        .merge(mcp_router)
         .with_state(state)
         .fallback_service(ServeDir::new("dist").not_found_service(ServeFile::new("dist/index.html")))
         .layer(cors)

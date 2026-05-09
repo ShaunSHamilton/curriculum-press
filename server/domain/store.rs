@@ -9,10 +9,11 @@ use uuid::Uuid;
 use crate::{
     domain::{
         models::{
-            AddOrganizationMemberInput, CreateBlockInput, CreateOrganizationInput,
-            CreateProjectInput, CreateUserInput, Curriculum, ExportedCurriculum, InteractiveBlock,
-            Organization, OrganizationMember, OrganizationRole, Project, ProjectWorkspace,
-            UpdateBlockInput, UpdateProjectInput, User,
+            AddOrganizationMemberInput, ApiKey, CreateApiKeyInput, CreateBlockInput,
+            CreateOrganizationInput, CreateProjectInput, CreateUserInput, Curriculum,
+            ExportedCurriculum, InteractiveBlock, Organization, OrganizationMember,
+            OrganizationRole, Project, ProjectWorkspace, UpdateBlockInput, UpdateProjectInput,
+            User,
         },
         validation::{validate_block_config, validate_project, validate_user},
     },
@@ -49,6 +50,11 @@ pub trait Store: Send + Sync {
     ) -> Result<Curriculum, Error>;
 
     fn export_curriculum(&self, project_id: Uuid) -> Result<ExportedCurriculum, Error>;
+
+    fn create_api_key(&self, input: CreateApiKeyInput, key_hash: &str) -> Result<ApiKey, Error>;
+    fn find_api_key_by_hash(&self, key_hash: &str) -> Result<Option<ApiKey>, Error>;
+    fn list_api_keys_for_user(&self, user_id: Uuid) -> Result<Vec<ApiKey>, Error>;
+    fn delete_api_key(&self, key_id: Uuid, user_id: Uuid) -> Result<(), Error>;
 }
 
 #[derive(Default)]
@@ -60,6 +66,8 @@ struct Database {
     projects: HashMap<Uuid, Project>,
     curricula: HashMap<Uuid, Curriculum>,
     blocks: HashMap<Uuid, InteractiveBlock>,
+    api_keys: HashMap<Uuid, ApiKey>,
+    api_keys_by_hash: HashMap<String, Uuid>,
 }
 
 pub struct InMemoryStore {
@@ -531,5 +539,62 @@ impl Store for InMemoryStore {
             curriculum: workspace.curriculum,
             blocks: workspace.blocks,
         })
+    }
+
+    fn create_api_key(&self, input: CreateApiKeyInput, key_hash: &str) -> Result<ApiKey, Error> {
+        let mut db = self.db.write().expect("store write lock");
+        if !db.users.contains_key(&input.user_id) {
+            return Err(not_found("User not found."));
+        }
+        let key = ApiKey {
+            id: Uuid::new_v4(),
+            user_id: input.user_id,
+            name: input.name.trim().to_string(),
+            prefix: input.prefix,
+            key_hash: key_hash.to_string(),
+            project_scope: input.project_scope,
+            created_at: now(),
+            last_used_at: None,
+        };
+        db.api_keys_by_hash.insert(key_hash.to_string(), key.id);
+        db.api_keys.insert(key.id, key.clone());
+        Ok(key)
+    }
+
+    fn find_api_key_by_hash(&self, key_hash: &str) -> Result<Option<ApiKey>, Error> {
+        let db = self.db.read().expect("store read lock");
+        let key = db
+            .api_keys_by_hash
+            .get(key_hash)
+            .and_then(|id| db.api_keys.get(id))
+            .cloned();
+        Ok(key)
+    }
+
+    fn list_api_keys_for_user(&self, user_id: Uuid) -> Result<Vec<ApiKey>, Error> {
+        let db = self.db.read().expect("store read lock");
+        let mut keys = db
+            .api_keys
+            .values()
+            .filter(|key| key.user_id == user_id)
+            .cloned()
+            .collect::<Vec<_>>();
+        keys.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+        Ok(keys)
+    }
+
+    fn delete_api_key(&self, key_id: Uuid, user_id: Uuid) -> Result<(), Error> {
+        let mut db = self.db.write().expect("store write lock");
+        let key = db
+            .api_keys
+            .get(&key_id)
+            .ok_or_else(|| not_found("API key not found."))?;
+        if key.user_id != user_id {
+            return Err(Error::unauthorized("You do not own this API key."));
+        }
+        let hash = key.key_hash.clone();
+        db.api_keys.remove(&key_id);
+        db.api_keys_by_hash.remove(&hash);
+        Ok(())
     }
 }

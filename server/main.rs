@@ -1,7 +1,9 @@
+mod api_keys;
 mod app;
 mod config;
 mod domain;
 mod errors;
+mod mcp;
 mod routes;
 mod state;
 

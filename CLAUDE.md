@@ -25,13 +25,13 @@ No test framework is configured yet.
 
 Copy `sample.env` to `.env`. Required vars:
 
-| Var | Default | Notes |
-|-----|---------|-------|
-| `PORT` | `8080` | Backend port |
-| `COOKIE_KEY` | — | 64+ UTF-8 chars, required |
-| `ALLOWED_ORIGINS` | `http://127.0.0.1:<PORT>` | CORS |
-| `REQUEST_BODY_SIZE_LIMIT` | `5242880` | bytes |
-| `REQUEST_TIMEOUT_IN_MS` | `5000` | |
+| Var                       | Default                   | Notes                     |
+| ------------------------- | ------------------------- | ------------------------- |
+| `PORT`                    | `8080`                    | Backend port              |
+| `COOKIE_KEY`              | —                         | 64+ UTF-8 chars, required |
+| `ALLOWED_ORIGINS`         | `http://127.0.0.1:<PORT>` | CORS                      |
+| `REQUEST_BODY_SIZE_LIMIT` | `5242880`                 | bytes                     |
+| `REQUEST_TIMEOUT_IN_MS`   | `5000`                    |                           |
 
 ## Architecture
 
@@ -62,6 +62,7 @@ UI: sidebar with orgs/projects + tabbed main area (edit, preview, export).
 Block types: `tile-match`, `category-sort`, `sequence-sorter`, `interactive-diagram`, `syntax-sprint`, `binary-blitz`.
 
 Exports:
+
 - `InteractiveBlockRenderer` — renders a single block
 - `CurriculumPlayer` — full playback experience
 - Type definitions in `types.ts`
@@ -73,4 +74,3 @@ Both the builder (`client/`) and any learner-facing app consume this package.
 - **Chunking:** vite.config.ts splits React, TanStack Query, Router, and icons into separate chunks.
 - **React compiler:** babel-plugin-react-compiler enabled — avoid manual `useMemo`/`useCallback` unless profiling shows a need.
 - **Strict TypeScript:** `noUnusedLocals` and `noUnusedParameters` are on. Fix them, don't suppress.
-- **Prisma:** present in Dockerfile build but not wired into server code — stub for future DB integration.

@@ -64,3 +64,18 @@ export type AuthResponse = {
   user: User;
   authHeaderName: string;
 };
+
+export type ApiKeyInfo = {
+  id: string;
+  userId: string;
+  name: string;
+  prefix: string;
+  projectScope: string[] | null;
+  createdAt: string;
+  lastUsedAt: string | null;
+};
+
+export type CreatedApiKey = {
+  key: ApiKeyInfo;
+  rawKey: string;
+};

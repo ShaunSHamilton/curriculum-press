@@ -1,20 +1,21 @@
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    http::HeaderMap,
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
-    routing::{get, patch, post},
+    routing::{delete, get, patch, post},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
+    api_keys::{generate_raw_key, hash_key, key_prefix},
     domain::{
         models::{
-            AddOrganizationMemberInput, BlockSettings, BlockType, CreateBlockInput,
-            CreateOrganizationInput, CreateProjectInput, CreateUserInput, ExportedCurriculum,
-            Organization, OrganizationMember, OrganizationRole, Project, ProjectStatus,
-            ProjectWorkspace, UpdateBlockInput, UpdateProjectInput, User,
+            AddOrganizationMemberInput, ApiKeyInfo, BlockSettings, BlockType, CreateApiKeyInput,
+            CreateBlockInput, CreateOrganizationInput, CreateProjectInput, CreateUserInput,
+            CreatedApiKey, ExportedCurriculum, Organization, OrganizationMember, OrganizationRole,
+            Project, ProjectStatus, ProjectWorkspace, UpdateBlockInput, UpdateProjectInput, User,
         },
         store::Store,
     },
@@ -116,6 +117,8 @@ pub struct ReorderBlocksRequest {
 
 pub fn api_router() -> Router<ServerState> {
     Router::new()
+        .route("/api-keys", get(list_api_keys).post(create_api_key))
+        .route("/api-keys/{key_id}", delete(revoke_api_key))
         .route("/catalog", get(get_catalog))
         .route("/auth/signup", post(sign_up))
         .route("/auth/signin", post(sign_in))
@@ -505,4 +508,59 @@ async fn get_public_project(
     Path(project_id): Path<Uuid>,
 ) -> Result<Json<ExportedCurriculum>, Error> {
     Ok(Json(state.store.export_curriculum(project_id)?))
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateApiKeyRequest {
+    name: String,
+    project_scope: Option<Vec<Uuid>>,
+}
+
+async fn create_api_key(
+    State(state): State<ServerState>,
+    headers: HeaderMap,
+    Json(payload): Json<CreateApiKeyRequest>,
+) -> Result<Json<CreatedApiKey>, Error> {
+    let user_id = require_user_id(&headers)?;
+    let raw_key = generate_raw_key();
+    let key_hash = hash_key(&raw_key);
+    let prefix = key_prefix(&raw_key);
+    let api_key = state.store.create_api_key(
+        CreateApiKeyInput {
+            user_id,
+            name: payload.name,
+            prefix,
+            project_scope: payload.project_scope,
+        },
+        &key_hash,
+    )?;
+    Ok(Json(CreatedApiKey {
+        key: ApiKeyInfo::from(api_key),
+        raw_key,
+    }))
+}
+
+async fn list_api_keys(
+    State(state): State<ServerState>,
+    headers: HeaderMap,
+) -> Result<Json<Vec<ApiKeyInfo>>, Error> {
+    let user_id = require_user_id(&headers)?;
+    let keys = state
+        .store
+        .list_api_keys_for_user(user_id)?
+        .into_iter()
+        .map(ApiKeyInfo::from)
+        .collect();
+    Ok(Json(keys))
+}
+
+async fn revoke_api_key(
+    State(state): State<ServerState>,
+    headers: HeaderMap,
+    Path(key_id): Path<Uuid>,
+) -> Result<impl IntoResponse, Error> {
+    let user_id = require_user_id(&headers)?;
+    state.store.delete_api_key(key_id, user_id)?;
+    Ok(StatusCode::NO_CONTENT)
 }

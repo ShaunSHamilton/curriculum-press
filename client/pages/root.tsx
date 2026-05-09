@@ -16,6 +16,7 @@ import { Badge, Button, Card, EmptyState, Field, Input, Select, Tabs, Textarea }
 import {
   AUTH_STORAGE_KEY,
   addMember,
+  createApiKey,
   createBlock,
   createOrganization,
   createProject,
@@ -24,11 +25,13 @@ import {
   exportProject,
   getMe,
   getProjectWorkspace,
+  listApiKeys,
   listMembers,
   listMyProjects,
   listOrganizations,
   listProjects,
   reorderBlocks,
+  revokeApiKey,
   signIn,
   signUp,
   updateBlock,
@@ -36,6 +39,8 @@ import {
 } from "../lib/api";
 import type {
   AnyInteractiveBlock,
+  ApiKeyInfo,
+  CreatedApiKey,
   ExportedCurriculum,
   Organization,
   OrganizationMember,
@@ -686,7 +691,7 @@ export function OrganizationProjectsPage() {
   );
 }
 
-type SettingsTab = "profile" | "organization" | "projects";
+type SettingsTab = "profile" | "organization" | "projects" | "api-keys";
 
 export function SettingsPage() {
   const { userId, selectedOrganizationId, setSelectedOrganizationId } = useAppSession();
@@ -746,6 +751,7 @@ export function SettingsPage() {
           { label: "Profile", value: "profile" },
           { label: "Organization", value: "organization" },
           { label: "Projects", value: "projects" },
+          { label: "API Keys", value: "api-keys" },
         ]}
         onChange={(value) => setTab(value as SettingsTab)}
         value={tab}
@@ -875,6 +881,146 @@ export function SettingsPage() {
           )}
         </Card>
       ) : null}
+
+      {tab === "api-keys" ? <ApiKeysPanel userId={userId} /> : null}
+    </div>
+  );
+}
+
+function ApiKeysPanel({ userId }: { userId: string }) {
+  const queryClient = useQueryClient();
+  const [keyName, setKeyName] = useState("");
+  const [newKey, setNewKey] = useState<CreatedApiKey | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const keysQuery = useQuery({
+    enabled: Boolean(userId),
+    queryKey: ["api-keys", userId],
+    queryFn: () => listApiKeys(userId),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (name: string) => createApiKey(userId, { name }),
+    onSuccess: (data) => {
+      setKeyName("");
+      setNewKey(data);
+      void queryClient.invalidateQueries({ queryKey: ["api-keys", userId] });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: (keyId: string) => revokeApiKey(userId, keyId),
+    onSuccess: () => {
+      toast.success("API key revoked");
+      void queryClient.invalidateQueries({ queryKey: ["api-keys", userId] });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const mcpEndpoint = `${window.location.origin}/mcp`;
+
+  function handleCopy(text: string) {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div className="stack">
+      <Card
+        subtitle={`Connect AI agents via MCP at ${mcpEndpoint}`}
+        title="API Keys"
+      >
+        <div className="stack">
+          {newKey ? (
+            <div className="stack-sm">
+              <p style={{ color: "var(--color-warning, orange)", fontWeight: 600 }}>
+                Copy this key now — it will not be shown again.
+              </p>
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <Input readOnly value={newKey.rawKey} style={{ fontFamily: "monospace", flex: 1 }} />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => handleCopy(newKey.rawKey)}
+                >
+                  {copied ? "Copied!" : "Copy"}
+                </Button>
+              </div>
+              <Button type="button" variant="secondary" onClick={() => setNewKey(null)}>
+                Done
+              </Button>
+            </div>
+          ) : null}
+
+          {(keysQuery.data ?? []).length ? (
+            <div className="member-list">
+              {(keysQuery.data ?? []).map((key: ApiKeyInfo) => (
+                <div className="member-row" key={key.id} style={{ justifyContent: "space-between" }}>
+                  <div className="stack-sm">
+                    <strong>{key.name}</strong>
+                    <span style={{ fontFamily: "monospace", fontSize: "0.85em" }}>
+                      {key.prefix}…
+                    </span>
+                    {key.projectScope ? (
+                      <span style={{ fontSize: "0.8em", color: "var(--color-muted)" }}>
+                        {key.projectScope.length} project(s) scoped
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "0.8em", color: "var(--color-muted)" }}>
+                        All projects
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    disabled={revokeMutation.isPending}
+                    onClick={() => revokeMutation.mutate(key.id)}
+                    type="button"
+                    variant="secondary"
+                  >
+                    Revoke
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState body="Create an API key to connect AI agents." title="No API Keys" />
+          )}
+
+          <Field hint="A label to identify this key" label="Key Name" required>
+            <Input
+              onChange={(e) => setKeyName(e.currentTarget.value)}
+              placeholder="e.g. Claude agent"
+              value={keyName}
+            />
+          </Field>
+          <Button
+            disabled={!keyName.trim() || createMutation.isPending}
+            onClick={() => createMutation.mutate(keyName.trim())}
+            type="button"
+          >
+            Create API Key
+          </Button>
+        </div>
+      </Card>
+
+      <Card subtitle="Configure your agent with these details." title="MCP Connection">
+        <div className="stack-sm">
+          <Field label="Endpoint URL">
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <Input readOnly value={mcpEndpoint} style={{ fontFamily: "monospace", flex: 1 }} />
+              <Button type="button" variant="secondary" onClick={() => handleCopy(mcpEndpoint)}>
+                {copied ? "Copied!" : "Copy"}
+              </Button>
+            </div>
+          </Field>
+          <p style={{ fontSize: "0.85em", color: "var(--color-muted)" }}>
+            Set <code>Authorization: Bearer &lt;key&gt;</code> on all requests.
+          </p>
+        </div>
+      </Card>
     </div>
   );
 }
