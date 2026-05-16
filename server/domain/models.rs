@@ -10,6 +10,7 @@ pub enum BlockType {
     InteractiveDiagram,
     SyntaxSprint,
     BinaryBlitz,
+    MultipleChoice,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

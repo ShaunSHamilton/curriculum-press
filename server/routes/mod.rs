@@ -227,6 +227,13 @@ async fn get_catalog() -> Json<Vec<serde_json::Value>> {
             "description": "Make fast true/false judgments.",
             "mvp": true
         }),
+        serde_json::json!({
+            "type": "multiple-choice",
+            "name": "Multiple Choice",
+            "objective": "Concept selection from a fixed set of options",
+            "description": "Pick the correct answer(s) from a list of choices.",
+            "mvp": true
+        }),
     ])
 }
 

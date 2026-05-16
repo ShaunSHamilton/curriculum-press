@@ -4,7 +4,8 @@ export type BlockType =
   | "sequence-sorter"
   | "interactive-diagram"
   | "syntax-sprint"
-  | "binary-blitz";
+  | "binary-blitz"
+  | "multiple-choice";
 
 export type Difficulty = "easy" | "medium" | "hard";
 
@@ -80,6 +81,17 @@ export type BinaryBlitzConfig = {
   }>;
 };
 
+export type MultipleChoiceConfig = {
+  prompt: string;
+  allowMultiple: boolean;
+  choices: Array<{
+    id: string;
+    label: string;
+    isCorrect: boolean;
+    explanation?: string;
+  }>;
+};
+
 export type BlockConfigMap = {
   "tile-match": TileMatchConfig;
   "category-sort": CategorySortConfig;
@@ -87,6 +99,7 @@ export type BlockConfigMap = {
   "interactive-diagram": InteractiveDiagramConfig;
   "syntax-sprint": SyntaxSprintConfig;
   "binary-blitz": BinaryBlitzConfig;
+  "multiple-choice": MultipleChoiceConfig;
 };
 
 export type InteractiveBlock<T extends BlockType = BlockType> = {
@@ -156,6 +169,13 @@ export const BLOCK_CATALOG: BlockCatalogEntry[] = [
     name: "Binary Blitz",
     objective: "Rapid recognition and classification",
     description: "Make quick true/false style judgments on a set of prompts.",
+    mvp: true,
+  },
+  {
+    type: "multiple-choice",
+    name: "Multiple Choice",
+    objective: "Concept selection from a fixed set of options",
+    description: "Pick the correct answer(s) from a list of choices.",
     mvp: true,
   },
 ];
@@ -266,6 +286,23 @@ export function createDefaultBlock(type: BlockType): AnyInteractiveBlock {
           targetText: "const velocity = distance / time;",
           languageHint: "JavaScript",
           caseSensitive: true,
+        },
+      };
+    case "multiple-choice":
+      return {
+        id,
+        type,
+        title: entry.name,
+        description: "Pick the correct answer.",
+        settings: { ...DEFAULT_BLOCK_SETTINGS },
+        config: {
+          prompt: "Which of the following is correct?",
+          allowMultiple: false,
+          choices: [
+            { id: makeId("choice"), label: "Option A", isCorrect: true },
+            { id: makeId("choice"), label: "Option B", isCorrect: false },
+            { id: makeId("choice"), label: "Option C", isCorrect: false },
+          ],
         },
       };
     case "binary-blitz":
@@ -385,6 +422,23 @@ export function validateInteractiveBlock(block: AnyInteractiveBlock): string[] {
       }
       if (block.config.statements.some((statement) => !statement.text.trim())) {
         messages.push("Binary Blitz statements cannot be blank.");
+      }
+      break;
+    case "multiple-choice":
+      if (!block.config.prompt.trim()) {
+        messages.push("Multiple Choice needs a prompt.");
+      }
+      if (block.config.choices.length < 2) {
+        messages.push("Multiple Choice needs at least two choices.");
+      }
+      if (block.config.choices.some((choice) => !choice.label.trim())) {
+        messages.push("Multiple Choice options cannot be blank.");
+      }
+      if (!block.config.choices.some((choice) => choice.isCorrect)) {
+        messages.push("Multiple Choice needs at least one correct answer.");
+      }
+      if (!block.config.allowMultiple && block.config.choices.filter((c) => c.isCorrect).length > 1) {
+        messages.push("Single-answer Multiple Choice can only have one correct option.");
       }
       break;
   }

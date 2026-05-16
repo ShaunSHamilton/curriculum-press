@@ -6,6 +6,7 @@ import type {
   BinaryBlitzConfig,
   CategorySortConfig,
   InteractiveDiagramConfig,
+  MultipleChoiceConfig,
   SequenceSorterConfig,
   SyntaxSprintConfig,
   TileFace,
@@ -303,7 +304,119 @@ function ConfigEditor({
           onChange={(config) => onChange(config)}
         />
       );
+    case "multiple-choice":
+      return (
+        <MultipleChoiceEditor
+          config={block.config as MultipleChoiceConfig}
+          onChange={(config) => onChange(config)}
+        />
+      );
   }
+}
+
+function MultipleChoiceEditor({
+  config,
+  onChange,
+}: {
+  config: MultipleChoiceConfig;
+  onChange: (config: MultipleChoiceConfig) => void;
+}) {
+  const updateChoice = (id: string, patch: Partial<MultipleChoiceConfig["choices"][number]>) =>
+    onChange({
+      ...config,
+      choices: config.choices.map((candidate) =>
+        candidate.id === id ? { ...candidate, ...patch } : candidate,
+      ),
+    });
+
+  return (
+    <div className="stack">
+      <Field label="Prompt">
+        <Textarea
+          onChange={(event) => onChange({ ...config, prompt: event.currentTarget.value })}
+          rows={2}
+          value={config.prompt}
+        />
+      </Field>
+      <label className="checkbox">
+        <input
+          checked={config.allowMultiple}
+          onChange={(event) => {
+            const allowMultiple = event.currentTarget.checked;
+            if (!allowMultiple) {
+              const firstCorrect = config.choices.find((c) => c.isCorrect)?.id;
+              onChange({
+                ...config,
+                allowMultiple,
+                choices: config.choices.map((c) => ({
+                  ...c,
+                  isCorrect: c.id === firstCorrect,
+                })),
+              });
+            } else {
+              onChange({ ...config, allowMultiple });
+            }
+          }}
+          type="checkbox"
+        />
+        <span>Allow multiple correct answers</span>
+      </label>
+      {config.choices.map((choice) => (
+        <div className="panel-grid" key={choice.id}>
+          <Field label="Choice">
+            <Input
+              onChange={(event) => updateChoice(choice.id, { label: event.currentTarget.value })}
+              value={choice.label}
+            />
+          </Field>
+          <Field label="Explanation">
+            <Input
+              onChange={(event) =>
+                updateChoice(choice.id, { explanation: event.currentTarget.value })
+              }
+              value={choice.explanation ?? ""}
+            />
+          </Field>
+          <label className="checkbox">
+            <input
+              checked={choice.isCorrect}
+              onChange={(event) => {
+                const isCorrect = event.currentTarget.checked;
+                if (isCorrect && !config.allowMultiple) {
+                  onChange({
+                    ...config,
+                    choices: config.choices.map((c) => ({
+                      ...c,
+                      isCorrect: c.id === choice.id,
+                    })),
+                  });
+                } else {
+                  updateChoice(choice.id, { isCorrect });
+                }
+              }}
+              type="checkbox"
+            />
+            <span>Correct answer</span>
+          </label>
+        </div>
+      ))}
+      <Button
+        onClick={() =>
+          onChange({
+            ...config,
+            choices: [
+              ...config.choices,
+              { id: makeId("choice"), label: "", isCorrect: false, explanation: "" },
+            ],
+          })
+        }
+        type="button"
+        variant="secondary"
+      >
+        Add Choice
+      </Button>
+    </div>
+  );
 }
 
 function TileFaceEditor({

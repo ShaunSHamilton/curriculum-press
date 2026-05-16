@@ -6,6 +6,7 @@ import type {
   CategorySortConfig,
   InteractiveBlock,
   InteractiveDiagramConfig,
+  MultipleChoiceConfig,
   SequenceSorterConfig,
   SyntaxSprintConfig,
   TileFace,
@@ -361,6 +362,93 @@ function BinaryBlitzBlock({ block }: { block: InteractiveBlock<"binary-blitz"> }
   );
 }
 
+function MultipleChoiceBlock({ block }: { block: InteractiveBlock<"multiple-choice"> }) {
+  const { prompt, choices, allowMultiple } = block.config as MultipleChoiceConfig;
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  const correctIds = choices.filter((c) => c.isCorrect).map((c) => c.id);
+  const selectedIds = Object.entries(selected).filter(([, v]) => v).map(([id]) => id);
+  const isCorrect =
+    submitted &&
+    selectedIds.length === correctIds.length &&
+    selectedIds.every((id) => correctIds.includes(id));
+
+  const toggle = (id: string) => {
+    if (submitted) return;
+    setSelected((current) =>
+      allowMultiple
+        ? { ...current, [id]: !current[id] }
+        : { [id]: !current[id] },
+    );
+  };
+
+  return (
+    <PlayerCard
+      eyebrow="Multiple Choice"
+      title={block.title}
+      body={block.description}
+      footer={
+        submitted
+          ? isCorrect
+            ? "Correct"
+            : "Not quite — review the highlighted answers"
+          : allowMultiple
+            ? "Select all that apply"
+            : "Select one"
+      }
+    >
+      <p className="cp-prompt">{prompt}</p>
+      <div className="cp-stack">
+        {choices.map((choice) => {
+          const active = Boolean(selected[choice.id]);
+          let stateClass = "";
+          if (submitted) {
+            if (choice.isCorrect) stateClass = "is-success";
+            else if (active) stateClass = "is-danger";
+          } else if (active) {
+            stateClass = "is-active";
+          }
+          return (
+            <button
+              key={choice.id}
+              className={`cp-inline-card cp-choice ${stateClass}`}
+              onClick={() => toggle(choice.id)}
+              type="button"
+            >
+              <div>
+                <strong>{choice.label}</strong>
+                {submitted && choice.explanation ? <p>{choice.explanation}</p> : null}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="cp-player-controls">
+        <button
+          className="cp-chip-button is-active"
+          disabled={submitted || selectedIds.length === 0}
+          onClick={() => setSubmitted(true)}
+          type="button"
+        >
+          Submit
+        </button>
+        <button
+          className="cp-chip-button"
+          disabled={!submitted}
+          onClick={() => {
+            setSubmitted(false);
+            setSelected({});
+          }}
+          type="button"
+        >
+          Reset
+        </button>
+      </div>
+    </PlayerCard>
+  );
+}
+
 export function InteractiveBlockRenderer({ block }: BlockRendererProps) {
   switch (block.type) {
     case "tile-match":
@@ -375,6 +463,8 @@ export function InteractiveBlockRenderer({ block }: BlockRendererProps) {
       return <SyntaxSprintBlock block={block} />;
     case "binary-blitz":
       return <BinaryBlitzBlock block={block} />;
+    case "multiple-choice":
+      return <MultipleChoiceBlock block={block} />;
   }
 }
 

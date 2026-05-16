@@ -62,7 +62,7 @@ pub struct GetCurriculumParams {
 pub struct CreateBlockParams {
     /// UUID of the curriculum to add the block to
     pub curriculum_id: String,
-    /// Block type: tile-match, category-sort, sequence-sorter, interactive-diagram, syntax-sprint, binary-blitz
+    /// Block type: tile-match, category-sort, sequence-sorter, interactive-diagram, syntax-sprint, binary-blitz, multiple-choice
     pub block_type: String,
     pub title: String,
     pub description: Option<String>,

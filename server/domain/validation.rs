@@ -112,6 +112,21 @@ struct BinaryStatement {
     text: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct MultipleChoiceConfig {
+    prompt: String,
+    allow_multiple: bool,
+    choices: Vec<MultipleChoiceOption>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct MultipleChoiceOption {
+    label: String,
+    is_correct: bool,
+}
+
 fn bad_request(message: impl Into<String>) -> Error {
     Error::bad_request(message)
 }
@@ -251,6 +266,35 @@ pub fn validate_block_config(
                 .any(|statement| statement.text.trim().is_empty())
             {
                 return Err(bad_request("Binary Blitz statements cannot be blank."));
+            }
+        }
+        BlockType::MultipleChoice => {
+            let parsed: MultipleChoiceConfig = serde_json::from_value(config.clone())
+                .map_err(|_| bad_request("Multiple Choice config shape is invalid."))?;
+            if parsed.prompt.trim().is_empty() || parsed.choices.len() < 2 {
+                return Err(bad_request(
+                    "Multiple Choice needs a prompt and at least two choices.",
+                ));
+            }
+
+            if parsed
+                .choices
+                .iter()
+                .any(|choice| choice.label.trim().is_empty())
+            {
+                return Err(bad_request("Multiple Choice options cannot be blank."));
+            }
+
+            let correct_count = parsed.choices.iter().filter(|c| c.is_correct).count();
+            if correct_count == 0 {
+                return Err(bad_request(
+                    "Multiple Choice needs at least one correct answer.",
+                ));
+            }
+            if !parsed.allow_multiple && correct_count > 1 {
+                return Err(bad_request(
+                    "Single-answer Multiple Choice can only have one correct option.",
+                ));
             }
         }
     }
